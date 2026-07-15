@@ -1,0 +1,1428 @@
+"use client";
+
+import React, { useState } from "react";
+import {
+  Sparkles,
+  Inbox,
+  ClipboardList,
+  Search,
+  Send,
+  CheckCircle2,
+  ChevronRight,
+  UploadCloud,
+  Lock,
+  Mail,
+  Bell,
+  Clock,
+  GripVertical,
+  CalendarClock,
+  Menu,
+  X,
+} from "lucide-react";
+
+/* ---------------------------------------------------------------
+   COSMIC REMEDIES — OPS CONSOLE
+   Palette pulled from the live site: warm parchment background,
+   deep coffee-brown chrome (matching the site's nav bar), and the
+   same amber-gold used on "Order Your Report". Maroon stands in
+   for identity/assignment accents where the marketing site would
+   use its secondary brown. Sits behind a login gate reached from
+   the public site's existing "Login" nav button.
+------------------------------------------------------------------ */
+
+/* ---------------- Ornamental mandala watermark ---------------- */
+const Mandala = ({
+  size = 300,
+  opacity = 0.06,
+  color = "var(--gold)",
+  className = "",
+}) => (
+  <svg
+    className={`cr-mandala-spin ${className}`}
+    width={size}
+    height={size}
+    viewBox="0 0 200 200"
+    style={{ opacity }}
+    aria-hidden="true"
+  >
+    <g fill="none" stroke={color} strokeWidth="0.6">
+      <circle cx="100" cy="100" r="94" />
+      <circle cx="100" cy="100" r="78" />
+      <circle cx="100" cy="100" r="62" />
+      <circle cx="100" cy="100" r="24" />
+      {Array.from({ length: 16 }).map((_, i) => (
+        <path
+          key={i}
+          d="M100,100 C102,60 112,42 100,8 C88,42 98,60 100,100 Z"
+          transform={`rotate(${i * 22.5} 100 100)`}
+        />
+      ))}
+      {Array.from({ length: 24 }).map((_, i) => (
+        <line
+          key={`s${i}`}
+          x1="100"
+          y1="100"
+          x2={100 + 94 * Math.cos((i * 15 * Math.PI) / 180)}
+          y2={100 + 94 * Math.sin((i * 15 * Math.PI) / 180)}
+          strokeWidth="0.3"
+        />
+      ))}
+    </g>
+  </svg>
+);
+
+/* ---------------- Lotus watermark (real artwork) — falls back to hand-drawn Mandala if missing ---------------- */
+const LotusWatermark = ({ size = 300, opacity = 0.1, className = "" }) => (
+  <img
+    src="/lotus-mandala.webp"
+    alt=""
+    aria-hidden="true"
+    className={`cr-mandala-spin ${className}`}
+    style={{ width: size, height: size, opacity, objectFit: "contain" }}
+  />
+);
+
+/* ---------------- Section eyebrow (ornamental divider) ---------------- */
+const Eyebrow = ({ children }) => (
+  <div className="cr-eyebrow">
+    <span className="cr-eyebrow-line" />
+    <span className="cr-eyebrow-text">{children}</span>
+    <span className="cr-eyebrow-line" />
+  </div>
+);
+
+/* ---------------- Twinkling star field (fixed positions — SSR-safe) ---------------- */
+const starData = [
+  { x: 6, y: 12, s: 2, d: 0.2, dur: 4.2 },
+  { x: 14, y: 68, s: 1.4, d: 1.1, dur: 3.6 },
+  { x: 22, y: 30, s: 1.8, d: 2.4, dur: 5 },
+  { x: 31, y: 82, s: 1.2, d: 0.6, dur: 3.2 },
+  { x: 39, y: 8, s: 1.6, d: 1.8, dur: 4.6 },
+  { x: 47, y: 55, s: 2.2, d: 0.4, dur: 3.8 },
+  { x: 58, y: 20, s: 1.3, d: 2.1, dur: 4.1 },
+  { x: 66, y: 76, s: 1.9, d: 1.3, dur: 5.2 },
+  { x: 73, y: 40, s: 1.5, d: 0.8, dur: 3.4 },
+  { x: 81, y: 90, s: 1.7, d: 2.6, dur: 4.4 },
+  { x: 88, y: 15, s: 2.1, d: 0.1, dur: 3.9 },
+  { x: 94, y: 60, s: 1.4, d: 1.6, dur: 4.8 },
+  { x: 4, y: 45, s: 1.6, d: 2.2, dur: 3.5 },
+  { x: 18, y: 92, s: 1.2, d: 0.9, dur: 4.3 },
+  { x: 27, y: 5, s: 1.8, d: 1.4, dur: 3.7 },
+  { x: 44, y: 35, s: 1.3, d: 2.8, dur: 4.9 },
+  { x: 52, y: 88, s: 2, d: 0.3, dur: 3.3 },
+  { x: 63, y: 10, s: 1.5, d: 1.9, dur: 4.5 },
+  { x: 77, y: 65, s: 1.7, d: 0.7, dur: 3.6 },
+  { x: 91, y: 33, s: 1.4, d: 2.5, dur: 4.7 },
+  { x: 11, y: 25, s: 1.9, d: 1.2, dur: 3.4 },
+  { x: 36, y: 70, s: 1.3, d: 0.5, dur: 4.2 },
+  { x: 69, y: 48, s: 1.6, d: 1.7, dur: 3.9 },
+  { x: 97, y: 78, s: 1.8, d: 2.3, dur: 4.6 },
+];
+const StarField = () => (
+  <div className="cr-stars" aria-hidden="true">
+    {starData.map((s, i) => (
+      <span
+        key={i}
+        className="cr-star"
+        style={{
+          left: `${s.x}%`,
+          top: `${s.y}%`,
+          width: s.s,
+          height: s.s,
+          animationDelay: `${s.d}s`,
+          animationDuration: `${s.dur}s`,
+        }}
+      />
+    ))}
+  </div>
+);
+
+const CosmicRemediesDashboard = () => {
+  const [authed, setAuthed] = useState(false);
+  const [view, setView] = useState("work");
+  const [activeConvo, setActiveConvo] = useState("c2");
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
+
+  const nav = [
+    { id: "work", label: "My Work", icon: Sparkles },
+    { id: "inbox", label: "Unified Inbox", icon: Inbox, badge: 4 },
+    { id: "tasks", label: "Report Tasks", icon: ClipboardList },
+  ];
+
+  return (
+    <div className="cr-root">
+      <GlobalStyle />
+      <div className="cr-grain" aria-hidden="true" />
+      {!authed ? (
+        <LoginView onLogin={() => setAuthed(true)} />
+      ) : (
+        <div className="cr-shell">
+          {mobileNavOpen && (
+            <div
+              className="cr-mobile-backdrop"
+              onClick={() => setMobileNavOpen(false)}
+            />
+          )}
+          <aside className={`cr-sidebar ${mobileNavOpen ? "open" : ""}`}>
+            <StarField />
+            <LotusWatermark
+              className="cr-sidebar-mandala"
+              size={340}
+              opacity={0.1}
+            />
+            <div className="cr-brand">
+              <img
+                src="/image.webp"
+                alt="Cosmic Remedies"
+                className="cr-brand-mark"
+              />
+              <div>
+                <div className="cr-brand-name cr-shimmer-text">
+                  Cosmic Remedies
+                </div>
+                <div className="cr-brand-sub">Astrologer Desk</div>
+              </div>
+              <div
+                className="cr-mobile-close"
+                onClick={() => setMobileNavOpen(false)}
+              >
+                <X size={18} />
+              </div>
+            </div>
+
+            <nav className="cr-navlist">
+              {nav.map((item) => {
+                const Icon = item.icon;
+                return (
+                  <div
+                    key={item.id}
+                    className={`cr-navitem ${view === item.id ? "active" : ""}`}
+                    onClick={() => {
+                      setView(item.id);
+                      setMobileNavOpen(false);
+                    }}
+                  >
+                    <Icon className="cr-navicon" />
+                    {item.label}
+                    {item.badge ? (
+                      <span className="cr-navbadge">{item.badge}</span>
+                    ) : null}
+                  </div>
+                );
+              })}
+            </nav>
+
+            <div className="cr-sidebar-foot">
+              <div className="cr-cap-card">
+                <OrbitRing value={6} max={10} size={40} stroke={4} />
+                <div>
+                  <div className="cr-cap-label">Daily cap</div>
+                  <div className="cr-cap-value">6 / 10</div>
+                </div>
+              </div>
+              <div className="cr-logout" onClick={() => setAuthed(false)}>
+                Sign out
+              </div>
+            </div>
+          </aside>
+
+          <main className="cr-main">
+            <LotusWatermark
+              className="cr-content-mandala"
+              size={520}
+              opacity={0.08}
+            />
+            <LotusWatermark
+              className="cr-content-mandala-2"
+              size={280}
+              opacity={0.07}
+            />
+            <TopBar view={view} onMenuClick={() => setMobileNavOpen(true)} />
+            <div className="cr-content">
+              {view === "work" && <MyWorkView />}
+              {view === "inbox" && (
+                <InboxView
+                  activeConvo={activeConvo}
+                  setActiveConvo={setActiveConvo}
+                />
+              )}
+              {view === "tasks" && <TasksView />}
+            </div>
+          </main>
+        </div>
+      )}
+    </div>
+  );
+};
+
+/* ---------------- Global palette + styles ---------------- */
+const GlobalStyle = () => (
+  <style>{`
+    @import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap');
+
+    /* ---------- Repeating ornamental tile texture ---------- */
+    .cr-tile-bg { position: relative; }
+    .cr-tile-bg::before {
+      content: ""; position: absolute; inset: 0; pointer-events: none; z-index: -1;
+      opacity: .5;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140' viewBox='0 0 140 140'%3E%3Cg fill='none' stroke='%23C08A26' stroke-width='0.6' opacity='0.35'%3E%3Ccircle cx='70' cy='70' r='30'/%3E%3Ccircle cx='70' cy='70' r='18'/%3E%3Cpath d='M70,40 C78,55 78,55 70,70 C62,55 62,55 70,40Z'/%3E%3Cpath d='M70,100 C78,85 78,85 70,70 C62,85 62,85 70,100Z'/%3E%3Cpath d='M40,70 C55,62 55,62 70,70 C55,78 55,78 40,70Z'/%3E%3Cpath d='M100,70 C85,62 85,62 70,70 C85,78 85,78 100,70Z'/%3E%3C/g%3E%3C/svg%3E");
+      background-repeat: repeat;
+    }
+
+    .cr-root {
+      --coffee-dark: #180F08;
+      --coffee: #241708;
+      --coffee-raised: #33230F;
+      --coffee-border: #4A3620;
+      --cream-bg: #F2E6D0;
+      --cream-panel: #FCF6EA;
+      --cream-panel-raised: #FFFDF8;
+      --tan-border: #E1CD9C;
+      --tan-border-soft: #ECDFBA;
+      --text: #2B1D10;
+      --text-dim: #6B5A42;
+      --text-faint: #9C8A6A;
+      --cream-text: #F3E7CC;
+      --cream-text-faint: #B49E76;
+      --gold: #C08A26;
+      --gold-bright: #E0AC46;
+      --gold-soft: #C08A2620;
+      --maroon: #8A3E24;
+      --maroon-soft: #8A3E2422;
+      --success: #6E8B5B;
+      --success-soft: #6E8B5B1E;
+      --warn: #C08A26;
+      --warn-soft: #C08A2620;
+      --danger: #B5533E;
+      --danger-soft: #B5533E1E;
+      --slate: #56708C;
+      --slate-soft: #56708C1E;
+      --shadow-sm: 0 1px 2px rgba(43,29,16,.06);
+      --shadow-md: 0 10px 30px -14px rgba(43,29,16,.28), 0 2px 6px -2px rgba(43,29,16,.08);
+      --shadow-lg: 0 24px 60px -20px rgba(24,15,8,.35), 0 4px 12px -4px rgba(43,29,16,.12);
+
+      font-family: 'Inter', sans-serif;
+      background:
+        radial-gradient(1.5px 1.5px at 8% 12%, #C08A2635 40%, transparent 41%),
+        radial-gradient(1.5px 1.5px at 22% 68%, #8A3E2430 40%, transparent 41%),
+        radial-gradient(1.5px 1.5px at 38% 30%, #C08A2630 40%, transparent 41%),
+        radial-gradient(1.5px 1.5px at 61% 80%, #C08A2628 40%, transparent 41%),
+        radial-gradient(1.5px 1.5px at 78% 22%, #8A3E2428 40%, transparent 41%),
+        radial-gradient(1.5px 1.5px at 92% 58%, #C08A2630 40%, transparent 41%),
+        radial-gradient(1.5px 1.5px at 15% 90%, #C08A2625 40%, transparent 41%),
+        radial-gradient(1.5px 1.5px at 50% 8%, #8A3E2422 40%, transparent 41%),
+        radial-gradient(ellipse 60% 40% at 15% 0%, #C08A2620, transparent 55%),
+        radial-gradient(ellipse 60% 45% at 100% 100%, #8A3E2420, transparent 55%),
+        radial-gradient(ellipse 50% 40% at 90% 5%, #E0AC4614, transparent 60%),
+        var(--cream-bg);
+      color: var(--text);
+      min-height: 100vh;
+      font-size: 14px;
+      -webkit-font-smoothing: antialiased;
+    }
+    .cr-root * { box-sizing: border-box; }
+    .cr-shell { display: flex; min-height: 100vh; }
+
+    /* ---------- Ambient animation ---------- */
+    @keyframes cr-twinkle {
+      0%, 100% { opacity: .1; transform: scale(1); }
+      50% { opacity: .95; transform: scale(1.6); }
+    }
+    @keyframes cr-spin-slow { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+    @keyframes cr-shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+    @keyframes cr-float-a { 0%, 100% { transform: translate(0,0); } 50% { transform: translate(24px,-26px); } }
+    @keyframes cr-float-b { 0%, 100% { transform: translate(0,0); } 50% { transform: translate(-20px,22px); } }
+
+    .cr-stars { position: absolute; inset: 0; pointer-events: none; z-index: 0; overflow: hidden; }
+    .cr-star {
+      position: absolute; border-radius: 50%; background: var(--gold-bright);
+      box-shadow: 0 0 4px 1px #E0AC4670;
+      animation-name: cr-twinkle; animation-timing-function: ease-in-out; animation-iteration-count: infinite;
+    }
+    .cr-mandala-spin { animation: cr-spin-slow 160s linear infinite; transform-origin: center; }
+    .cr-shimmer-text {
+      background-image: linear-gradient(100deg, #C4A268 20%, #FBEFD4 40%, #E4C687 55%, #C4A268 75%);
+      background-size: 220% 100%;
+      -webkit-background-clip: text; background-clip: text; color: transparent;
+      animation: cr-shimmer 7s linear infinite;
+    }
+
+    /* ---------- Paper grain overlay ---------- */
+    .cr-grain {
+      position: fixed; inset: 0; pointer-events: none; z-index: 80; opacity: .045;
+      mix-blend-mode: multiply;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+    }
+
+    /* ---------- Ornamental mandala watermarks ---------- */
+    .cr-sidebar-mandala { position: absolute; bottom: -90px; left: -90px; pointer-events: none; z-index: 0; }
+    .cr-content-mandala { position: absolute; top: -140px; right: -140px; pointer-events: none; z-index: 0; }
+    .cr-content-mandala-2 { position: absolute; bottom: -90px; left: -90px; pointer-events: none; z-index: 0; }
+
+    /* ---------- Eyebrow divider ---------- */
+    .cr-eyebrow { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+    .cr-eyebrow-line { flex: 1; height: 1px; background: linear-gradient(90deg, transparent, var(--tan-border), transparent); max-width: 34px; }
+    .cr-eyebrow-text { font-size: 10px; font-weight: 700; letter-spacing: .16em; text-transform: uppercase; color: var(--gold); }
+
+    /* ---------- Login ---------- */
+    .cr-login-wrap {
+      min-height: 100vh; display: flex; align-items: center; justify-content: center;
+      position: relative; overflow: hidden;
+      background: radial-gradient(ellipse 80% 65% at 50% 38%, #FBF1DE 0%, #F2E2C4 55%, #E9D1A0 100%);
+      padding: 24px;
+    }
+    .cr-login-mandala {
+      position: absolute; inset: 0; margin: auto; pointer-events: none;
+      -webkit-mask-image: radial-gradient(circle, #000 45%, transparent 75%);
+      mask-image: radial-gradient(circle, #000 45%, transparent 75%);
+    }
+    .cr-login-card {
+      position: relative;
+      width: 392px; background: var(--cream-panel-raised);
+      border: 1px solid var(--tan-border); border-radius: 18px;
+      padding: 38px 34px 32px; box-shadow: var(--shadow-lg);
+      overflow: hidden;
+    }
+    .cr-login-card::before {
+      content: ""; position: absolute; top: 0; left: 0; right: 0; height: 3px;
+      background: linear-gradient(90deg, transparent, var(--gold-bright), var(--maroon), transparent);
+    }
+    .cr-login-mark {
+      height: 58px; width: auto; object-fit: contain; margin: 4px auto 18px; display: block;
+      filter: drop-shadow(0 6px 14px rgba(43,29,16,.25));
+    }
+    .cr-login-title {
+      font-family: 'Fraunces', serif; font-size: 23px; text-align: center;
+      letter-spacing: .01em;
+    }
+    .cr-login-sub {
+      font-size: 11px; color: var(--gold); text-align: center; margin-top: 6px; margin-bottom: 28px;
+      text-transform: uppercase; letter-spacing: .14em; font-weight: 600;
+    }
+    .cr-field-label { font-size: 11px; font-weight: 600; color: var(--text-dim); margin-bottom: 7px; display: block; letter-spacing: .02em; }
+    .cr-field {
+      display: flex; align-items: center; gap: 9px;
+      background: var(--cream-panel); border: 1px solid var(--tan-border-soft); border-radius: 10px;
+      padding: 11px 13px; margin-bottom: 17px;
+      transition: border-color .15s ease, box-shadow .15s ease;
+    }
+    .cr-field:focus-within { border-color: var(--gold); box-shadow: 0 0 0 3px #C08A2618; }
+    .cr-field input { border: none; background: transparent; outline: none; flex: 1; font-size: 13px; color: var(--text); font-family: 'Inter', sans-serif; }
+    .cr-field input::placeholder { color: var(--text-faint); }
+    .cr-login-btn {
+      width: 100%; padding: 12px 0; border-radius: 10px; border: none;
+      background: linear-gradient(150deg, var(--gold-bright), var(--gold) 60%, #8A5E19); color: #2A1706;
+      font-weight: 700; font-size: 13px; cursor: pointer; letter-spacing: .03em;
+      box-shadow: var(--shadow-sm), inset 0 1px 0 #FFE6B355;
+      transition: transform .15s ease, box-shadow .15s ease;
+    }
+    .cr-login-btn:hover { transform: translateY(-1px); box-shadow: var(--shadow-md), inset 0 1px 0 #FFE6B355; }
+    .cr-login-foot { text-align: center; font-size: 11.3px; color: var(--text-faint); margin-top: 18px; }
+    .cr-login-route {
+      text-align: center; font-size: 10.8px; color: var(--text-faint); margin-top: 22px;
+      border-top: 1px solid var(--tan-border-soft); padding-top: 14px; line-height: 1.6;
+    }
+    .cr-login-route b { color: var(--text-dim); }
+
+    /* ---------- Sidebar ---------- */
+    .cr-sidebar {
+      width: 244px; flex-shrink: 0; position: relative; overflow: hidden;
+      background: linear-gradient(175deg, var(--coffee) 0%, var(--coffee-dark) 100%);
+      box-shadow: 4px 0 24px -8px rgba(24,15,8,.35);
+      display: flex; flex-direction: column; padding: 24px 14px;
+    }
+    .cr-sidebar::after {
+      content: ""; position: absolute; top: 0; right: 0; bottom: 0; width: 1px;
+      background: linear-gradient(180deg, #C08A2640, transparent 40%, transparent 60%, #8A3E2430);
+    }
+    .cr-brand { display: flex; align-items: center; gap: 10px; padding: 4px 8px 24px 8px; position: relative; z-index: 1; }
+    .cr-brand-mark {
+      height: 34px; width: auto; object-fit: contain; flex-shrink: 0;
+      filter: drop-shadow(0 3px 6px rgba(0,0,0,.35));
+    }
+    .cr-brand-name {
+      font-family: 'Fraunces', serif; font-size: 15px; font-weight: 500;
+      background: linear-gradient(120deg, #FBEFD4, #E4C687 60%, #C4A268);
+      -webkit-background-clip: text; background-clip: text; color: transparent;
+      letter-spacing: 0.01em;
+    }
+    .cr-brand-sub { font-size: 9.5px; color: var(--gold-bright); letter-spacing: 0.16em; text-transform: uppercase; margin-top: 1px; }
+
+    .cr-navlist { display: flex; flex-direction: column; gap: 2px; margin-top: 4px; position: relative; z-index: 1; }
+    .cr-navitem {
+      position: relative;
+      display: flex; align-items: center; gap: 10px; padding: 9.5px 10px 9.5px 13px; border-radius: 8px;
+      color: var(--cream-text-faint); font-size: 13px; font-weight: 500; cursor: pointer;
+      border: 1px solid transparent; transition: background .15s ease, color .15s ease;
+    }
+    .cr-navitem:hover { background: #FFFFFF08; color: var(--cream-text); }
+    .cr-navitem.active { background: linear-gradient(90deg, #C08A2620, transparent); color: var(--cream-text); }
+    .cr-navitem.active::before {
+      content: ""; position: absolute; left: -1px; top: 6px; bottom: 6px; width: 2.5px;
+      border-radius: 2px; background: linear-gradient(180deg, var(--gold-bright), var(--gold));
+    }
+    .cr-navitem.active .cr-navicon { color: var(--gold-bright); }
+    .cr-navicon { width: 16px; height: 16px; color: #7A6647; flex-shrink: 0; }
+    .cr-navbadge { margin-left: auto; font-size: 10px; font-family: 'IBM Plex Mono', monospace; color: var(--gold-bright); background: #C08A2626; padding: 1.5px 6px; border-radius: 20px; }
+
+    .cr-sidebar-foot { margin-top: auto; padding-top: 18px; border-top: 1px solid #FFFFFF10; position: relative; z-index: 1; }
+    .cr-role-toggle { display: flex; background: var(--coffee-dark); border-radius: 9px; padding: 3px; border: 1px solid #FFFFFF0F; margin-bottom: 14px; }
+    .cr-role-btn { flex: 1; text-align: center; padding: 6.5px 0; border-radius: 7px; font-size: 11.3px; font-weight: 600; color: #7A6647; cursor: pointer; letter-spacing: 0.02em; transition: background .15s ease, color .15s ease; }
+    .cr-role-btn.active { background: linear-gradient(150deg, #3A2916, #2A1D10); color: var(--gold-bright); box-shadow: var(--shadow-sm); }
+
+    .cr-cap-card { display: flex; align-items: center; gap: 12px; padding: 11px 12px; border-radius: 11px; background: var(--coffee-dark); border: 1px solid #FFFFFF0F; margin-bottom: 12px; }
+    .cr-cap-label { font-size: 11px; color: #8A7657; }
+    .cr-cap-value { font-size: 13px; font-weight: 600; font-family: 'IBM Plex Mono', monospace; color: var(--cream-text); }
+    .cr-logout { text-align: center; font-size: 11.5px; color: #8A7657; cursor: pointer; padding: 6px 0; }
+    .cr-logout:hover { color: var(--cream-text); }
+
+    /* ---------- Main ---------- */
+    .cr-main { flex: 1; min-width: 0; display: flex; flex-direction: column; height: 100vh; overflow: hidden; position: relative; }
+    .cr-topbar {
+      display: flex; align-items: center; justify-content: space-between; padding: 22px 32px;
+      border-bottom: 1px solid var(--tan-border-soft); flex-shrink: 0;
+      background: #FFFDF8EE; backdrop-filter: blur(8px);
+      box-shadow: 0 4px 20px -14px rgba(43,29,16,.2);
+      position: relative; z-index: 2;
+    }
+    .cr-title { font-family: 'Fraunces', serif; font-size: 23px; font-weight: 500; letter-spacing: .003em; }
+    .cr-subtitle { font-size: 12px; color: var(--text-faint); margin-top: 3px; letter-spacing: .01em; }
+    .cr-search { display: flex; align-items: center; gap: 8px; background: var(--cream-panel); border: 1px solid var(--tan-border-soft); border-radius: 9px; padding: 9px 13px; width: 264px; color: var(--text-faint); font-size: 12.3px; transition: border-color .15s ease; }
+    .cr-search:hover { border-color: #D9C088; }
+    .cr-avatar {
+      width: 33px; height: 33px; border-radius: 50%; background: linear-gradient(150deg, #A6572F, var(--maroon)); color: #F6E4D3;
+      display: flex; align-items: center; justify-content: center; font-size: 11.5px; font-weight: 700;
+      font-family: 'IBM Plex Mono', monospace; box-shadow: var(--shadow-sm), inset 0 1px 0 #FFFFFF20;
+    }
+    .cr-content { flex: 1; overflow-y: auto; padding: 28px 32px 44px; position: relative; z-index: 1; }
+
+    /* ---------- Notifications ---------- */
+    .cr-notif-wrap { position: relative; }
+    .cr-notif-btn {
+      width: 36px; height: 36px; border-radius: 10px; border: 1px solid var(--tan-border-soft);
+      background: var(--cream-panel); display: flex; align-items: center; justify-content: center;
+      cursor: pointer; position: relative; color: var(--text-dim); transition: border-color .15s ease, background .15s ease;
+    }
+    .cr-notif-btn:hover { border-color: #D9C088; background: var(--cream-panel-raised); }
+    .cr-notif-dot {
+      position: absolute; top: -5px; right: -5px; min-width: 16px; height: 16px; padding: 0 4px;
+      border-radius: 20px; background: var(--maroon); color: #FBEFD4; font-size: 9.5px; font-weight: 700;
+      display: flex; align-items: center; justify-content: center; font-family: 'IBM Plex Mono', monospace;
+      border: 2px solid var(--cream-bg);
+    }
+    .cr-notif-backdrop { position: fixed; inset: 0; z-index: 30; }
+    .cr-notif-panel {
+      position: absolute; top: 44px; right: 0; width: 300px; z-index: 31;
+      background: var(--cream-panel-raised); border: 1px solid var(--tan-border);
+      border-radius: 13px; box-shadow: var(--shadow-lg); overflow: hidden;
+    }
+    .cr-notif-head {
+      padding: 13px 16px; font-size: 12.5px; font-weight: 700; letter-spacing: .03em;
+      border-bottom: 1px solid var(--tan-border-soft); color: var(--text);
+    }
+    .cr-notif-item {
+      display: flex; gap: 9px; padding: 12px 16px; border-bottom: 1px solid var(--tan-border-soft);
+      position: relative;
+    }
+    .cr-notif-item:last-child { border-bottom: none; }
+    .cr-notif-item:hover { background: var(--cream-panel); }
+    .cr-notif-item-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--gold); margin-top: 5px; flex-shrink: 0; }
+    .cr-notif-title { font-size: 12.3px; font-weight: 600; }
+    .cr-notif-body { font-size: 11.5px; color: var(--text-dim); margin-top: 2px; line-height: 1.4; }
+    .cr-notif-time { font-size: 10px; color: var(--text-faint); margin-top: 5px; display: flex; align-items: center; gap: 4px; }
+
+    /* ---------- Shared ---------- */
+    .cr-pill { display: inline-flex; align-items: center; gap: 5px; padding: 3px 9px; border-radius: 20px; font-size: 11px; font-weight: 600; letter-spacing: .01em; }
+    .cr-pill-dot { width: 5px; height: 5px; border-radius: 50%; }
+    .cr-pill.new { background: var(--maroon-soft); color: var(--maroon); }
+    .cr-pill.new .cr-pill-dot { background: var(--maroon); }
+    .cr-pill.progress { background: var(--warn-soft); color: var(--warn); }
+    .cr-pill.progress .cr-pill-dot { background: var(--warn); }
+    .cr-pill.ready { background: var(--success-soft); color: var(--success); }
+    .cr-pill.ready .cr-pill-dot { background: var(--success); }
+    .cr-pill.delivered { background: #9C8A6A22; color: var(--text-dim); }
+    .cr-pill.delivered .cr-pill-dot { background: var(--text-dim); }
+    .cr-pill.replied { background: var(--success-soft); color: var(--success); }
+    .cr-pill.replied .cr-pill-dot { background: var(--success); }
+    .cr-pill.closed { background: #9C8A6A22; color: var(--text-dim); }
+    .cr-pill.closed .cr-pill-dot { background: var(--text-dim); }
+    .cr-pill.failed { background: var(--danger-soft); color: var(--danger); }
+    .cr-pill.failed .cr-pill-dot { background: var(--danger); }
+
+    .cr-card {
+      background: var(--cream-panel-raised); border: 1px solid var(--tan-border-soft);
+      border-radius: 14px; box-shadow: var(--shadow-md);
+    }
+    .cr-stat-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 24px; }
+    .cr-stat { padding: 18px 20px; position: relative; overflow: hidden; }
+    .cr-stat::before {
+      content: ""; position: absolute; top: 0; left: 0; right: 0; height: 2px;
+      background: linear-gradient(90deg, var(--gold-bright), transparent 70%);
+    }
+    .cr-stat-label { font-size: 11px; color: var(--text-faint); margin-bottom: 9px; text-transform: uppercase; letter-spacing: .06em; font-weight: 600; }
+    .cr-stat-value { font-family: 'Fraunces', serif; font-size: 28px; }
+    .cr-stat-sub { font-size: 11px; color: var(--text-faint); margin-top: 5px; }
+
+    .cr-section-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+    .cr-section-title { font-size: 13.5px; font-weight: 600; }
+    .cr-section-count { color: var(--text-faint); font-weight: 400; margin-left: 6px; font-family: 'IBM Plex Mono', monospace; font-size: 12px; }
+
+    .cr-task-row { display: flex; align-items: center; gap: 14px; padding: 13px 16px; border-bottom: 1px solid var(--tan-border-soft); cursor: pointer; }
+    .cr-task-row:last-child { border-bottom: none; }
+    .cr-task-row:hover { background: var(--cream-panel-raised); }
+    .cr-task-name { font-size: 13px; font-weight: 500; }
+    .cr-task-meta { font-size: 11.5px; color: var(--text-faint); margin-top: 2px; }
+
+    .cr-orbit-wrap { position: relative; display: flex; align-items: center; justify-content: center; }
+    .cr-orbit-label { position: absolute; font-family: 'IBM Plex Mono', monospace; font-weight: 600; text-align: center; line-height: 1.1; }
+
+    .cr-inbox-layout { display: grid; grid-template-columns: 320px 1fr; gap: 0; height: 100%; border: 1px solid var(--tan-border-soft); border-radius: 14px; overflow: hidden; box-shadow: var(--shadow-md); }
+    .cr-convo-list { border-right: 1px solid var(--tan-border-soft); background: var(--cream-panel); overflow-y: auto; max-height: 640px; }
+    .cr-convo-item { padding: 13px 16px; border-bottom: 1px solid var(--tan-border-soft); cursor: pointer; display: flex; gap: 10px; }
+    .cr-convo-item:hover { background: var(--cream-panel-raised); }
+    .cr-convo-item.active { background: var(--cream-panel-raised); box-shadow: inset 2px 0 0 var(--gold); }
+    .cr-channel-icon { width: 30px; height: 30px; border-radius: 9px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: 9.5px; font-weight: 700; letter-spacing: .02em; font-family: 'IBM Plex Mono', monospace; }
+    .cr-channel-icon.ig { background: linear-gradient(135deg,#E1306C2E,#F583332E); color: #C43B72; }
+    .cr-channel-icon.fb { background: #1877F220; color: #3E68C4; }
+    .cr-convo-name { font-size: 12.8px; font-weight: 600; }
+    .cr-convo-preview { font-size: 11.8px; color: var(--text-faint); margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 210px; }
+    .cr-convo-time { font-size: 10px; color: var(--text-faint); font-family: 'IBM Plex Mono', monospace; flex-shrink: 0; }
+
+    .cr-thread { background: var(--cream-panel-raised); display: flex; flex-direction: column; }
+    .cr-thread-head { padding: 14px 20px; border-bottom: 1px solid var(--tan-border-soft); display: flex; align-items: center; justify-content: space-between; }
+    .cr-thread-body { flex: 1; padding: 20px; display: flex; flex-direction: column; gap: 12px; overflow-y: auto; max-height: 480px; }
+    .cr-msg { max-width: 68%; padding: 9px 13px; border-radius: 12px; font-size: 12.8px; line-height: 1.5; }
+    .cr-msg.in { background: var(--cream-panel); align-self: flex-start; border: 1px solid var(--tan-border-soft); }
+    .cr-msg.out { background: var(--gold-soft); color: #6B4A17; align-self: flex-end; border: 1px solid #C9922F33; }
+    .cr-msg-time { font-size: 9.5px; color: var(--text-faint); font-family: 'IBM Plex Mono', monospace; margin-top: 4px; }
+    .cr-composer { border-top: 1px solid var(--tan-border-soft); padding: 12px 16px; display: flex; gap: 10px; align-items: center; }
+    .cr-composer input { flex: 1; background: var(--cream-panel); border: 1px solid var(--tan-border-soft); border-radius: 8px; padding: 10px 12px; color: var(--text); font-size: 12.8px; outline: none; }
+    .cr-composer input::placeholder { color: var(--text-faint); }
+    .cr-send-btn { background: var(--gold); color: #2A1B0E; border: none; width: 36px; height: 36px; border-radius: 8px; display: flex; align-items: center; justify-content: center; cursor: pointer; flex-shrink: 0; }
+
+    .cr-kanban { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; align-items: start; }
+    .cr-kcol { border-radius: 14px; padding: 6px; transition: background .15s ease, box-shadow .15s ease; }
+    .cr-kcol.over { background: color-mix(in srgb, var(--col-accent) 10%, transparent); box-shadow: inset 0 0 0 1.5px var(--col-accent); }
+    .cr-kcol-head { display: flex; align-items: center; gap: 8px; justify-content: space-between; padding: 4px 6px 12px; position: relative; }
+    .cr-kcol-bar { height: 3px; border-radius: 3px; background: var(--col-accent); margin: 0 6px 12px; opacity: .55; }
+    .cr-kcol-title-wrap { display: flex; align-items: center; gap: 7px; }
+    .cr-kcol-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--col-accent); flex-shrink: 0; }
+    .cr-kcol-title { font-size: 12px; font-weight: 700; letter-spacing: .02em; text-transform: uppercase; color: var(--col-accent); }
+    .cr-kcol-body { min-height: 60px; }
+    .cr-kempty {
+      border: 1.5px dashed var(--tan-border); border-radius: 11px; padding: 16px;
+      text-align: center; font-size: 11px; color: var(--text-faint);
+    }
+    .cr-kcard {
+      background: var(--cream-panel-raised); border: 1px solid var(--tan-border-soft); border-left: 3px solid var(--col-accent);
+      border-radius: 11px; padding: 13px; margin-bottom: 10px; cursor: grab; box-shadow: var(--shadow-sm);
+      transition: transform .15s ease, box-shadow .15s ease, border-color .15s ease, opacity .15s ease;
+    }
+    .cr-kcard:hover { border-color: var(--tan-border-soft); border-left-color: var(--col-accent); transform: translateY(-2px); box-shadow: var(--shadow-md); }
+    .cr-kcard.dragging { opacity: .4; cursor: grabbing; }
+    .cr-kcard-top { display: flex; align-items: center; justify-content: space-between; }
+    .cr-kclient { font-size: 12.8px; font-weight: 600; }
+    .cr-kservice { font-size: 11.3px; color: var(--text-faint); margin: 4px 0 10px; }
+    .cr-kmeta-row { display: flex; align-items: center; gap: 7px; margin-bottom: 10px; }
+    .cr-priority { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+    .cr-priority.high { background: var(--danger); }
+    .cr-priority.med { background: var(--warn); }
+    .cr-priority.low { background: var(--text-faint); }
+    .cr-kdue { display: flex; align-items: center; gap: 4px; font-size: 10.8px; color: var(--text-faint); }
+    .cr-kfoot { display: flex; align-items: center; justify-content: space-between; }
+    .cr-kassignee { display: flex; align-items: center; gap: 6px; font-size: 11px; color: var(--text-dim); }
+    .cr-kdot { width: 18px; height: 18px; border-radius: 50%; background: var(--maroon-soft); color: var(--maroon); display: flex; align-items: center; justify-content: center; font-size: 9px; font-weight: 700; }
+
+    /* ---------- Task detail modal ---------- */
+    .cr-modal-backdrop {
+      position: fixed; inset: 0; background: #180F08AA; backdrop-filter: blur(3px);
+      display: flex; align-items: center; justify-content: center; z-index: 50; padding: 20px;
+    }
+    .cr-modal {
+      width: 460px; max-width: 100%; max-height: 86vh; overflow-y: auto;
+      background: var(--cream-panel-raised); border: 1px solid var(--tan-border);
+      border-radius: 16px; box-shadow: var(--shadow-lg); position: relative;
+    }
+    .cr-modal-top { height: 4px; background: var(--col-accent, var(--gold)); }
+    .cr-modal-head { padding: 22px 24px 14px; display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+    .cr-modal-client { font-family: 'Fraunces', serif; font-size: 19px; }
+    .cr-modal-service { font-size: 12px; color: var(--text-faint); margin-top: 3px; }
+    .cr-modal-close {
+      width: 28px; height: 28px; border-radius: 8px; border: 1px solid var(--tan-border-soft);
+      background: var(--cream-panel); display: flex; align-items: center; justify-content: center;
+      cursor: pointer; flex-shrink: 0; color: var(--text-dim); font-size: 14px;
+    }
+    .cr-modal-close:hover { border-color: #D9C088; }
+    .cr-modal-body { padding: 4px 24px 24px; }
+    .cr-modal-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px; }
+    .cr-modal-field-label { font-size: 10.5px; text-transform: uppercase; letter-spacing: .06em; color: var(--text-faint); font-weight: 600; margin-bottom: 5px; }
+    .cr-modal-field-value { font-size: 13px; font-weight: 500; }
+    .cr-modal-divider { height: 1px; background: var(--tan-border-soft); margin: 4px 0 16px; }
+    .cr-modal-section-title { font-size: 11.5px; font-weight: 700; letter-spacing: .03em; text-transform: uppercase; color: var(--text-dim); margin-bottom: 10px; }
+    .cr-modal-check { display: flex; align-items: center; gap: 9px; padding: 8px 0; font-size: 12.8px; color: var(--text); }
+    .cr-modal-check.done { color: var(--text-dim); }
+    .cr-modal-actions { display: flex; gap: 10px; margin-top: 20px; }
+    .cr-modal-btn {
+      flex: 1; padding: 10px 0; border-radius: 9px; font-size: 12.5px; font-weight: 700;
+      cursor: pointer; text-align: center; letter-spacing: .02em; border: 1px solid transparent;
+    }
+    .cr-modal-btn.primary { background: linear-gradient(150deg, var(--gold-bright), var(--gold) 60%, #8A5E19); color: #2A1706; box-shadow: var(--shadow-sm); }
+    .cr-modal-btn.ghost { background: var(--cream-panel); border-color: var(--tan-border-soft); color: var(--text-dim); }
+
+    .cr-table { width: 100%; border-collapse: collapse; }
+    .cr-table th { text-align: left; font-size: 10.5px; text-transform: uppercase; letter-spacing: .05em; color: var(--text-faint); padding: 10px 14px; border-bottom: 1px solid var(--tan-border-soft); font-weight: 600; }
+    .cr-table td { padding: 12px 14px; border-bottom: 1px solid var(--tan-border-soft); font-size: 12.5px; }
+    .cr-table tr:hover td { background: var(--cream-panel-raised); }
+    .cr-table tr:last-child td { border-bottom: none; }
+
+    .cr-audit-row { display: flex; gap: 14px; padding: 12px 0; border-bottom: 1px solid var(--tan-border-soft); }
+    .cr-audit-row:last-child { border-bottom: none; }
+    .cr-audit-time { font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: var(--text-faint); width: 130px; flex-shrink: 0; padding-top: 1px; }
+    .cr-audit-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--maroon); margin-top: 5px; flex-shrink: 0; }
+    .cr-audit-text { font-size: 12.8px; }
+    .cr-audit-text b { font-weight: 600; color: var(--text); }
+    .cr-audit-sub { font-size: 11.3px; color: var(--text-faint); margin-top: 2px; }
+
+    ::-webkit-scrollbar { width: 8px; height: 8px; }
+    ::-webkit-scrollbar-thumb { background: #D9C79A; border-radius: 8px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+
+    /* ---------- Mobile nav ---------- */
+    .cr-hamburger {
+      display: none; width: 34px; height: 34px; border-radius: 9px; align-items: center; justify-content: center;
+      background: var(--cream-panel); border: 1px solid var(--tan-border-soft); color: var(--text-dim); cursor: pointer; flex-shrink: 0;
+    }
+    .cr-mobile-close { display: none; margin-left: auto; color: var(--cream-text-faint); cursor: pointer; }
+    .cr-mobile-backdrop { display: none; }
+
+    /* ================= RESPONSIVE ================= */
+    @media (max-width: 1080px) {
+      .cr-stat-grid { grid-template-columns: repeat(2, 1fr); }
+      .cr-kanban { grid-template-columns: repeat(2, 1fr); }
+    }
+
+    @media (max-width: 860px) {
+      .cr-sidebar {
+        position: fixed; top: 0; left: 0; bottom: 0; z-index: 90; width: 260px;
+        transform: translateX(-100%); transition: transform .25s ease;
+        box-shadow: 12px 0 40px -12px rgba(24,15,8,.5);
+      }
+      .cr-sidebar.open { transform: translateX(0); }
+      .cr-mobile-close { display: block; }
+      .cr-mobile-backdrop {
+        display: block; position: fixed; inset: 0; background: #180F08AA; z-index: 89;
+        backdrop-filter: blur(2px);
+      }
+      .cr-hamburger { display: flex; }
+      .cr-topbar { padding: 16px 18px; }
+      .cr-title { font-size: 19px; }
+      .cr-search { display: none; }
+      .cr-content { padding: 18px 18px 32px; }
+      .cr-content-mandala, .cr-content-mandala-2 { display: none; }
+      .cr-inbox-layout { grid-template-columns: 1fr; height: auto; }
+      .cr-convo-list { max-height: 260px; }
+      .cr-thread { min-height: 380px; }
+    }
+
+    @media (max-width: 640px) {
+      .cr-stat-grid { grid-template-columns: 1fr 1fr; gap: 10px; }
+      .cr-stat-value { font-size: 22px; }
+      .cr-kanban { grid-template-columns: 1fr; }
+      .cr-modal { width: 100%; }
+      .cr-notif-panel { width: 88vw; right: -8px; }
+      .cr-login-card { padding: 30px 22px 26px; }
+      .cr-login-mandala { display: none; }
+    }
+
+    @media (max-width: 420px) {
+      .cr-stat-grid { grid-template-columns: 1fr; }
+      .cr-avatar { display: none; }
+    }
+  `}</style>
+);
+
+/* ---------------- Login ---------------- */
+const LoginView = ({ onLogin }) => (
+  <div className="cr-login-wrap">
+    <LotusWatermark className="cr-login-mandala" size={780} opacity={0.14} />
+    <div className="cr-login-card">
+      <img src="/image.webp" alt="Cosmic Remedies" className="cr-login-mark" />
+      <div className="cr-login-title cr-shimmer-text">Cosmic Remedies</div>
+      <div className="cr-login-sub">Sign in to the Astrologer Desk</div>
+
+      <label className="cr-field-label">Email</label>
+      <div className="cr-field">
+        <Mail size={15} color="#9C8A6A" />
+        <input placeholder="you@cosmicremedies.com" />
+      </div>
+
+      <label className="cr-field-label">Password</label>
+      <div className="cr-field">
+        <Lock size={15} color="#9C8A6A" />
+        <input type="password" placeholder="••••••••" />
+      </div>
+
+      <button className="cr-login-btn" onClick={onLogin}>
+        Sign in
+      </button>
+      <div className="cr-login-foot">
+        Astrologer accounts only — created by an admin.
+      </div>
+    </div>
+  </div>
+);
+
+/* ---------------- Orbit ring ---------------- */
+const OrbitRing = ({
+  value,
+  max,
+  size = 44,
+  stroke = 4,
+  color = "var(--gold)",
+}) => {
+  const r = (size - stroke) / 2;
+  const c = 2 * Math.PI * r;
+  const pct = Math.min(value / max, 1);
+  return (
+    <div className="cr-orbit-wrap" style={{ width: size, height: size }}>
+      <svg width={size} height={size} style={{ transform: "rotate(-90deg)" }}>
+        <circle
+          cx={size / 2}
+          cy={size / 2}
+          r={r}
+          fill="none"
+          stroke="#E3D0A5"
+          strokeWidth={stroke}
+        />
+        <circle
+          cx={size / 2}
+          cy={size / 2}
+          r={r}
+          fill="none"
+          stroke={color}
+          strokeWidth={stroke}
+          strokeLinecap="round"
+          strokeDasharray={c}
+          strokeDashoffset={c - pct * c}
+        />
+      </svg>
+      <div
+        className="cr-orbit-label"
+        style={{ fontSize: size * 0.28, color: "var(--text)" }}
+      >
+        {value}
+      </div>
+    </div>
+  );
+};
+
+/* ---------------- Top bar ---------------- */
+const titles = {
+  work: ["My Work", "Today's report tasks and open conversations"],
+  inbox: ["Unified Inbox", "Instagram and Facebook messages, one thread"],
+  tasks: ["Report Tasks", "Birth-chart PDF pipeline — drag a card to move it"],
+};
+const TopBar = ({ view, onMenuClick }) => (
+  <div className="cr-topbar">
+    <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+      <div className="cr-hamburger" onClick={onMenuClick}>
+        <Menu size={18} />
+      </div>
+      <div>
+        <div className="cr-title">{titles[view][0]}</div>
+        <div className="cr-subtitle">{titles[view][1]}</div>
+      </div>
+    </div>
+    <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+      <div className="cr-search">
+        <Search size={14} />
+        Search clients, threads, tasks
+      </div>
+      <NotificationBell />
+      <div className="cr-avatar">RS</div>
+    </div>
+  </div>
+);
+
+/* ---------------- Notifications ---------------- */
+const notifications = [
+  {
+    title: "New Instagram DM",
+    body: "@sanaiqbal_ asked about delivery timing",
+    time: "2m ago",
+    unread: true,
+  },
+  {
+    title: "Task assigned",
+    body: "Arjun Verma — Marriage compatibility",
+    time: "18m ago",
+    unread: true,
+  },
+  {
+    title: "Cap warning",
+    body: "You're at 6 of 10 for today",
+    time: "1h ago",
+    unread: true,
+  },
+  {
+    title: "Report delivered",
+    body: "Rohan Sen's career report was sent",
+    time: "3h ago",
+    unread: false,
+  },
+];
+const NotificationBell = () => {
+  const [open, setOpen] = useState(false);
+  const unread = notifications.filter((n) => n.unread).length;
+  return (
+    <div className="cr-notif-wrap">
+      <button
+        className="cr-notif-btn"
+        onClick={() => setOpen((o) => !o)}
+        aria-label="Notifications"
+      >
+        <Bell size={16} />
+        {unread > 0 && <span className="cr-notif-dot">{unread}</span>}
+      </button>
+      {open && (
+        <>
+          <div className="cr-notif-backdrop" onClick={() => setOpen(false)} />
+          <div className="cr-notif-panel">
+            <div className="cr-notif-head">Notifications</div>
+            {notifications.map((n, i) => (
+              <div className="cr-notif-item" key={i}>
+                {n.unread && <span className="cr-notif-item-dot" />}
+                <div>
+                  <div className="cr-notif-title">{n.title}</div>
+                  <div className="cr-notif-body">{n.body}</div>
+                  <div className="cr-notif-time">
+                    <Clock size={10} /> {n.time}
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </>
+      )}
+    </div>
+  );
+};
+
+/* ---------------- My Work ---------------- */
+const MyWorkView = () => {
+  const tasks = [
+    {
+      name: "Priya Nair — Career report",
+      meta: "Assigned 09:12 · Due today",
+      status: "progress",
+    },
+    {
+      name: "Arjun Verma — Marriage compatibility",
+      meta: "Assigned 08:40 · Due today",
+      status: "new",
+    },
+    {
+      name: "Wedding WoWs — Instagram DM",
+      meta: "3 messages waiting",
+      status: "new",
+    },
+    {
+      name: "Sana Iqbal — Annual forecast",
+      meta: "PDF uploaded · awaiting review",
+      status: "ready",
+    },
+  ];
+  return (
+    <>
+      <Eyebrow>Today</Eyebrow>
+      <div className="cr-stat-grid">
+        <Stat label="Assigned today" value="6" sub="4 reports · 2 threads" />
+        <Stat label="Replied" value="18" sub="avg. response 6m" />
+        <Stat label="Reports delivered" value="3" sub="this week: 21" />
+        <Stat
+          label="Overdue"
+          value="0"
+          sub="nothing escalated"
+          tone="success"
+        />
+      </div>
+      <div className="cr-card" style={{ marginBottom: 18 }}>
+        <div style={{ padding: "14px 16px 4px" }}>
+          <div className="cr-section-title">
+            Assigned to you{" "}
+            <span className="cr-section-count">{tasks.length}</span>
+          </div>
+        </div>
+        <div>
+          {tasks.map((t, i) => (
+            <div className="cr-task-row" key={i}>
+              <StatusPill status={t.status} />
+              <div style={{ flex: 1 }}>
+                <div className="cr-task-name">{t.name}</div>
+                <div className="cr-task-meta">{t.meta}</div>
+              </div>
+              <ChevronRight size={15} color="var(--text-faint)" />
+            </div>
+          ))}
+        </div>
+      </div>
+    </>
+  );
+};
+
+const Stat = ({ label, value, sub, tone }) => (
+  <div className="cr-card cr-stat">
+    <div className="cr-stat-label">{label}</div>
+    <div
+      className="cr-stat-value"
+      style={tone === "success" ? { color: "var(--success)" } : {}}
+    >
+      {value}
+    </div>
+    <div className="cr-stat-sub">{sub}</div>
+  </div>
+);
+
+const StatusPill = ({ status }) => {
+  const map = {
+    new: { label: "New", cls: "new" },
+    progress: { label: "In progress", cls: "progress" },
+    replied: { label: "Replied", cls: "replied" },
+    closed: { label: "Closed", cls: "closed" },
+    ready: { label: "Ready", cls: "ready" },
+    delivered: { label: "Delivered", cls: "delivered" },
+    failed: { label: "Failed to send", cls: "failed" },
+  };
+  const s = map[status] || map.new;
+  return (
+    <span className={`cr-pill ${s.cls}`}>
+      <span className="cr-pill-dot" /> {s.label}
+    </span>
+  );
+};
+
+/* ---------------- Inbox ---------------- */
+const conversations = [
+  {
+    id: "c1",
+    channel: "ig",
+    name: "@sanaiqbal_",
+    preview: "Can I get the report by Friday?",
+    time: "2m",
+    status: "new",
+  },
+  {
+    id: "c2",
+    channel: "fb",
+    name: "Wedding WoWs",
+    preview: "Thank you! Sending birth details now.",
+    time: "11m",
+    status: "progress",
+  },
+  {
+    id: "c3",
+    channel: "ig",
+    name: "@arjun.verma",
+    preview: "Is the compatibility report ready?",
+    time: "34m",
+    status: "new",
+  },
+  {
+    id: "c4",
+    channel: "fb",
+    name: "Priya Nair",
+    preview: "Got it, thank you astro ji 🙏",
+    time: "1h",
+    status: "closed",
+  },
+  {
+    id: "c5",
+    channel: "ig",
+    name: "@cosmic.believer",
+    preview: "How much for a career reading?",
+    time: "3h",
+    status: "replied",
+  },
+];
+const threadMessages = {
+  c2: [
+    {
+      from: "in",
+      text: "Hi, I filled the form for a career report last week.",
+      time: "10:02",
+    },
+    {
+      from: "out",
+      text: "Hi! Yes, I have your birth details here. Reviewing your chart now.",
+      time: "10:05",
+      sendStatus: "Sent",
+    },
+    {
+      from: "in",
+      text: "Thank you! Sending birth details now.",
+      time: "10:12",
+    },
+  ],
+};
+
+const InboxView = ({ activeConvo, setActiveConvo }) => {
+  const convo =
+    conversations.find((c) => c.id === activeConvo) || conversations[0];
+  const messages = threadMessages[activeConvo] || threadMessages.c2;
+  return (
+    <div className="cr-inbox-layout">
+      <div className="cr-convo-list">
+        {conversations.map((c) => (
+          <div
+            key={c.id}
+            className={`cr-convo-item ${c.id === activeConvo ? "active" : ""}`}
+            onClick={() => setActiveConvo(c.id)}
+          >
+            <div className={`cr-channel-icon ${c.channel}`}>
+              {c.channel === "ig" ? "IG" : "FB"}
+            </div>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ display: "flex", justifyContent: "space-between" }}>
+                <div className="cr-convo-name">{c.name}</div>
+                <div className="cr-convo-time">{c.time}</div>
+              </div>
+              <div className="cr-convo-preview">{c.preview}</div>
+            </div>
+          </div>
+        ))}
+      </div>
+      <div className="cr-thread">
+        <div className="cr-thread-head">
+          <div>
+            <div style={{ fontWeight: 600, fontSize: 13 }}>{convo.name}</div>
+            <div style={{ fontSize: 11, color: "var(--text-faint)" }}>
+              {convo.channel === "ig"
+                ? "Instagram DM"
+                : "Facebook Page message"}{" "}
+              · reply appears as the company handle
+            </div>
+          </div>
+          <StatusPill status={convo.status} />
+        </div>
+        <div className="cr-thread-body">
+          {messages.map((m, i) => (
+            <div key={i} className={`cr-msg ${m.from}`}>
+              {m.text}
+              <div className="cr-msg-time">
+                {m.time}
+                {m.sendStatus ? ` · ${m.sendStatus}` : ""}
+              </div>
+            </div>
+          ))}
+        </div>
+        <div className="cr-composer">
+          <input placeholder="Reply as Cosmic Remedies…" />
+          <button className="cr-send-btn">
+            <Send size={15} />
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+/* ---------------- Tasks (Kanban — drag & drop) ---------------- */
+const columns = [
+  { key: "new", label: "New" },
+  { key: "progress", label: "In progress" },
+  { key: "ready", label: "Ready" },
+  { key: "delivered", label: "Delivered" },
+];
+const initialTasks = [
+  {
+    id: "t1",
+    client: "Priya Nair",
+    service: "Career report",
+    status: "progress",
+    who: "RS",
+    due: "Today",
+    priority: "high",
+  },
+  {
+    id: "t2",
+    client: "Arjun Verma",
+    service: "Marriage compatibility",
+    status: "new",
+    who: "—",
+    due: "Tomorrow",
+    priority: "med",
+  },
+  {
+    id: "t3",
+    client: "Sana Iqbal",
+    service: "Annual forecast",
+    status: "ready",
+    who: "RS",
+    due: "Today",
+    priority: "high",
+  },
+  {
+    id: "t4",
+    client: "Meher Dutta",
+    service: "Career report",
+    status: "new",
+    who: "—",
+    due: "in 2 days",
+    priority: "low",
+  },
+  {
+    id: "t5",
+    client: "K. Bannerjee",
+    service: "Health & wellness reading",
+    status: "progress",
+    who: "AJ",
+    due: "Tomorrow",
+    priority: "med",
+  },
+  {
+    id: "t6",
+    client: "Rohan Sen",
+    service: "Career report",
+    status: "delivered",
+    who: "AJ",
+    due: "Delivered",
+    priority: "low",
+  },
+  {
+    id: "t7",
+    client: "Wedding WoWs client",
+    service: "Marriage compatibility",
+    status: "delivered",
+    who: "RS",
+    due: "Delivered",
+    priority: "low",
+  },
+];
+
+const columnColors = {
+  new: "var(--maroon)",
+  progress: "var(--gold)",
+  ready: "var(--success)",
+  delivered: "var(--slate)",
+};
+
+const TasksView = () => {
+  const [tasks, setTasks] = useState(initialTasks);
+  const [draggingId, setDraggingId] = useState(null);
+  const [overCol, setOverCol] = useState(null);
+  const [selectedId, setSelectedId] = useState(null);
+
+  const onDrop = (e, colKey) => {
+    e.preventDefault();
+    const id = e.dataTransfer.getData("text/plain") || draggingId;
+    if (id) {
+      setTasks((prev) =>
+        prev.map((t) => (t.id === id ? { ...t, status: colKey } : t)),
+      );
+    }
+    setDraggingId(null);
+    setOverCol(null);
+  };
+
+  const selectedTask = tasks.find((t) => t.id === selectedId) || null;
+
+  return (
+    <div className="cr-kanban">
+      {columns.map((col) => {
+        const items = tasks.filter((t) => t.status === col.key);
+        const accent = columnColors[col.key];
+        return (
+          <div
+            key={col.key}
+            className={`cr-kcol ${overCol === col.key ? "over" : ""}`}
+            style={{ "--col-accent": accent }}
+            onDragOver={(e) => {
+              e.preventDefault();
+              e.dataTransfer.dropEffect = "move";
+              setOverCol(col.key);
+            }}
+            onDragLeave={() => setOverCol((c) => (c === col.key ? null : c))}
+            onDrop={(e) => onDrop(e, col.key)}
+          >
+            <div className="cr-kcol-head">
+              <div className="cr-kcol-title-wrap">
+                <span className="cr-kcol-dot" />
+                <span className="cr-kcol-title">{col.label}</span>
+              </div>
+              <span className="cr-section-count">{items.length}</span>
+            </div>
+            <div className="cr-kcol-bar" />
+            <div className="cr-kcol-body">
+              {items.map((t) => (
+                <div
+                  className={`cr-kcard ${draggingId === t.id ? "dragging" : ""}`}
+                  key={t.id}
+                  style={{ "--col-accent": accent }}
+                  draggable="true"
+                  onDragStart={(e) => {
+                    setDraggingId(t.id);
+                    e.dataTransfer.effectAllowed = "move";
+                    e.dataTransfer.setData("text/plain", t.id);
+                  }}
+                  onDragEnd={() => {
+                    setDraggingId(null);
+                    setOverCol(null);
+                  }}
+                  onClick={() => setSelectedId(t.id)}
+                >
+                  <div className="cr-kcard-top">
+                    <div className="cr-kclient">{t.client}</div>
+                    <GripVertical size={13} color="var(--text-faint)" />
+                  </div>
+                  <div className="cr-kservice">{t.service}</div>
+                  <div className="cr-kmeta-row">
+                    <span className={`cr-priority ${t.priority}`} />
+                    <span className="cr-kdue">
+                      <CalendarClock size={11} /> {t.due}
+                    </span>
+                  </div>
+                  <div className="cr-kfoot">
+                    <div className="cr-kassignee">
+                      <div className="cr-kdot">
+                        {t.who === "—" ? "·" : t.who}
+                      </div>
+                      {t.who === "—" ? "Unassigned" : t.who}
+                    </div>
+                    {col.key === "ready" && (
+                      <UploadCloud size={14} color="var(--success)" />
+                    )}
+                    {col.key === "delivered" && (
+                      <CheckCircle2 size={14} color="var(--success)" />
+                    )}
+                  </div>
+                </div>
+              ))}
+              {items.length === 0 && <div className="cr-kempty">Drop here</div>}
+            </div>
+          </div>
+        );
+      })}
+
+      {selectedTask && (
+        <TaskModal
+          task={selectedTask}
+          accent={columnColors[selectedTask.status]}
+          onClose={() => setSelectedId(null)}
+          onMove={(status) => {
+            setTasks((prev) =>
+              prev.map((t) =>
+                t.id === selectedTask.id ? { ...t, status } : t,
+              ),
+            );
+            setSelectedId(null);
+          }}
+        />
+      )}
+    </div>
+  );
+};
+
+const TaskModal = ({ task, accent, onClose, onMove }) => (
+  <div className="cr-modal-backdrop" onClick={onClose}>
+    <div
+      className="cr-modal"
+      style={{ "--col-accent": accent }}
+      onClick={(e) => e.stopPropagation()}
+    >
+      <div className="cr-modal-top" />
+      <div className="cr-modal-head">
+        <div>
+          <div className="cr-modal-client">{task.client}</div>
+          <div className="cr-modal-service">{task.service}</div>
+        </div>
+        <div className="cr-modal-close" onClick={onClose}>
+          ✕
+        </div>
+      </div>
+      <div className="cr-modal-body">
+        <div className="cr-modal-row">
+          <div>
+            <div className="cr-modal-field-label">Status</div>
+            <StatusPill status={task.status} />
+          </div>
+          <div>
+            <div className="cr-modal-field-label">Priority</div>
+            <div
+              className="cr-modal-field-value"
+              style={{ display: "flex", alignItems: "center", gap: 6 }}
+            >
+              <span className={`cr-priority ${task.priority}`} />
+              {task.priority === "high"
+                ? "High"
+                : task.priority === "med"
+                  ? "Medium"
+                  : "Low"}
+            </div>
+          </div>
+          <div>
+            <div className="cr-modal-field-label">Assigned to</div>
+            <div className="cr-modal-field-value">
+              {task.who === "—" ? "Unassigned" : task.who}
+            </div>
+          </div>
+          <div>
+            <div className="cr-modal-field-label">Due</div>
+            <div className="cr-modal-field-value">{task.due}</div>
+          </div>
+        </div>
+
+        <div className="cr-modal-divider" />
+
+        <div className="cr-modal-section-title">Birth details</div>
+        <div className="cr-modal-check done">
+          <CheckCircle2 size={14} color="var(--success)" /> Name, DOB, time &
+          place received
+        </div>
+        <div className="cr-modal-check done">
+          <CheckCircle2 size={14} color="var(--success)" /> Questionnaire
+          submitted
+        </div>
+        <div
+          className={`cr-modal-check ${task.status === "ready" || task.status === "delivered" ? "done" : ""}`}
+        >
+          <CheckCircle2
+            size={14}
+            color={
+              task.status === "ready" || task.status === "delivered"
+                ? "var(--success)"
+                : "var(--text-faint)"
+            }
+          />
+          Final PDF{" "}
+          {task.status === "ready" || task.status === "delivered"
+            ? "uploaded"
+            : "pending upload"}
+        </div>
+
+        <div className="cr-modal-actions">
+          {task.status !== "ready" && task.status !== "delivered" && (
+            <div
+              className="cr-modal-btn primary"
+              onClick={() => onMove("ready")}
+            >
+              Mark ready
+            </div>
+          )}
+          {task.status === "ready" && (
+            <div
+              className="cr-modal-btn primary"
+              onClick={() => onMove("delivered")}
+            >
+              Mark delivered
+            </div>
+          )}
+          <div className="cr-modal-btn ghost" onClick={onClose}>
+            Close
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+);
+
+export default CosmicRemediesDashboard;
