@@ -1,5 +1,5 @@
-import CosmicRemediesDashboard from "./components/cosmic-remedies-dashboard";
+import Dashboard from "./components/dashboard/Dashboard";
 
 export default function Home() {
-  return <CosmicRemediesDashboard />;
+  return <Dashboard />;
 }
