@@ -5,6 +5,7 @@ import { Sidebar } from "../layout/Sidebar";
 import { TopBar } from "../layout/TopBar";
 import { LotusWatermark } from "../common/LotusWatermark";
 import { MyWorkView } from "../work/MyWorkView";
+import CreateReport from "../work/CreateReport";
 import { InboxView } from "../inbox/InboxView";
 import { TasksView } from "../tasks/TasksView";
 
@@ -45,6 +46,7 @@ export default function Dashboard() {
                 <InboxView activeConvo={activeConvo} setActiveConvo={setActiveConvo} />
               )}
               {view === "tasks" && <TasksView />}
+              {view === "create-report" && <CreateReport />}
             </div>
           </main>
         </div>

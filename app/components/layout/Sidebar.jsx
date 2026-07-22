@@ -8,6 +8,9 @@ const nav = [
   { id: "work", label: "My Work", icon: Sparkles },
   { id: "inbox", label: "Unified Inbox", icon: Inbox, badge: 4 },
   { id: "tasks", label: "Report Tasks", icon: ClipboardList },
+  { id: "create-report", label: "Create Report", icon: ClipboardList },
+  // { id: "tasks", label: "Report Tasks", icon: ClipboardList },
+
 ];
 
 export const Sidebar = ({

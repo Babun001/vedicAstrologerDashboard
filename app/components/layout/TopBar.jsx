@@ -7,6 +7,10 @@ const titles = {
   work: ["My Work", "Today's report tasks and open conversations"],
   inbox: ["Unified Inbox", "Instagram and Facebook messages, one thread"],
   tasks: ["Report Tasks", "Birth-chart PDF pipeline — drag a card to move it"],
+  "create-report": [
+    "Create Report",
+    "Generate a new astrology report"
+  ],
 };
 export const TopBar = ({ view, onMenuClick }) => (
   <div className="cr-topbar">
