@@ -1,26 +1,32 @@
 "use client";
 
-import { useState, useCallback, useRef, useMemo } from "react";
+import { useState, useCallback, useRef } from "react";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { reportSchema } from "../lib/schemas";
 import { useCustomers } from "../hooks/useCustomers";
 import { generateReportPDF } from "../lib/pdf-generator";
 import { parseDocxToHtml } from "../lib/docx-parser";
-import { Button } from "../UI/button";
-import { Input } from "../UI/input";
-import { Select } from "../UI/select";
-import { Badge } from "../UI/badge";
 import { RichEditor } from "../utils/RichEditor";
 import { ReportPreviewModal } from "../utils/ReportPreviewModal";
-// import { mockCustomers } from "@/lib/mock-data";
 import {
-  Sparkles, FileText, PenLine, User, Eye,
-  Download, Send, CheckCircle2, Star,
-  Upload, X, FileUp, AlertCircle, Loader2,
-  BookOpen, Wand2, ChevronRight,
+  Sparkles,
+  FileText,
+  PenLine,
+  User,
+  Eye,
+  Download,
+  CheckCircle2,
+  Star,
+  Upload,
+  X,
+  FileUp,
+  AlertCircle,
+  Loader2,
+  BookOpen,
+  Wand2,
+  ChevronRight,
 } from "lucide-react";
-
 
 const TEMPLATES = [
   {
@@ -49,7 +55,6 @@ const STARTER_TEMPLATES = {
   "Divine Destiny Report": `<h2>Executive Summary</h2><p>This Divine Destiny Report provides the most comprehensive analysis of your birth chart, combining classical Parashari Jyotish with Jaimini techniques.</p><h2>Natal Chart — Detailed Analysis</h2><p>Ascendant, planets, houses...</p><h2>Vimshottari Dasha</h2><p>Current Dasha period and its implications...</p><h2>Career & Dharma</h2><p>Detailed 10th house analysis...</p><h2>Relationships & Marriage</h2><p>7th house, Venus, Jaimini analysis...</p><h2>Health & Wellness</h2><p>6th house, Moon, Ascendant lord...</p><h2>Spiritual Path</h2><p>9th house, 12th house, Ketu...</p><h2>Remedies & Prescriptions</h2><ul><li><strong>Gemstone:</strong></li><li><strong>Yantra:</strong></li><li><strong>Mantra:</strong></li><li><strong>Fasting:</strong></li><li><strong>Charity:</strong></li></ul><h2>Conclusion</h2><p>Summary and blessings...</p>`,
 };
 
-
 function DocxUploadCard({ onImport }) {
   const fileInputRef = useRef(null);
   const [dragOver, setDragOver] = useState(false);
@@ -61,7 +66,9 @@ function DocxUploadCard({ onImport }) {
     async (file) => {
       if (!file.name.endsWith(".docx")) {
         setStatus("error");
-        setErrorMsg("Only .docx files are supported. Please upload a Word document.");
+        setErrorMsg(
+          "Only .docx files are supported. Please upload a Word document.",
+        );
         return;
       }
       if (file.size > 20 * 1024 * 1024) {
@@ -86,10 +93,12 @@ function DocxUploadCard({ onImport }) {
       } catch (err) {
         console.error(err);
         setStatus("error");
-        setErrorMsg("Failed to parse the document. Make sure it is a valid .docx file.");
+        setErrorMsg(
+          "Failed to parse the document. Make sure it is a valid .docx file.",
+        );
       }
     },
-    [onImport]
+    [onImport],
   );
 
   const handleDrop = useCallback(
@@ -99,7 +108,7 @@ function DocxUploadCard({ onImport }) {
       const file = e.dataTransfer.files[0];
       if (file) processFile(file);
     },
-    [processFile]
+    [processFile],
   );
 
   const handleFileChange = (e) => {
@@ -115,153 +124,142 @@ function DocxUploadCard({ onImport }) {
   };
 
   return (
-    <div className="bg-white border border-gray-200 rounded-2xl p-5 shadow-sm">
-      {/* Header */}
-      <div className="flex items-center justify-between mb-4">
-        <h3 className="text-sm font-medium text-gray-700 flex items-center gap-2">
-          <FileUp size={14} className="text-amber-500" />
+    <div className="cr-form-card">
+      <div className="cr-form-card-head">
+        <h3 className="cr-form-card-title">
+          <FileUp size={14} />
           Import Word Document
-          <span className="ml-1 text-[10px] px-2 py-0.5 bg-amber-50 text-amber-600 border border-amber-200 rounded-full font-semibold">
+          <span className="cr-pill new" style={{ marginLeft: 4 }}>
             .docx
           </span>
         </h3>
         {status === "done" && (
-          <button
-            type="button"
-            onClick={reset}
-            className="text-xs text-gray-400 hover:text-gray-600 flex items-center gap-1 transition-colors"
-          >
+          <button type="button" onClick={reset} className="cr-remove-file">
             <X size={11} /> Replace file
           </button>
         )}
       </div>
 
-      {/* Drop zone */}
       {status === "idle" && (
         <div
-          onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
+          onDragOver={(e) => {
+            e.preventDefault();
+            setDragOver(true);
+          }}
           onDragLeave={() => setDragOver(false)}
           onDrop={handleDrop}
           onClick={() => fileInputRef.current?.click()}
-          className={`
-            relative flex flex-col items-center justify-center gap-3 
-            border-2 border-dashed rounded-xl px-6 py-8 cursor-pointer
-            transition-all duration-200 group
-            ${dragOver
-              ? "border-amber-400 bg-amber-50"
-              : "border-gray-200 bg-gray-50 hover:border-purple-300 hover:bg-purple-50/40"
-            }
-          `}
+          className={`cr-dropzone ${dragOver ? "drag" : ""}`}
         >
           <input
             ref={fileInputRef}
             type="file"
             accept=".docx"
-            className="hidden"
+            style={{ display: "none" }}
             onChange={handleFileChange}
           />
 
-          {/* Icon */}
-          <div className={`
-            w-14 h-14 rounded-2xl flex items-center justify-center transition-all
-            ${dragOver ? "bg-amber-100" : "bg-white border border-gray-200 group-hover:border-purple-200 group-hover:bg-purple-50"}
-          `}>
-            <Upload size={22} className={dragOver ? "text-amber-500" : "text-gray-400 group-hover:text-purple-500"} />
+          <div className="cr-dropzone-icon">
+            <Upload size={22} />
           </div>
 
-          <div className="text-center">
-            <p className="text-sm font-medium text-gray-700">
+          <div>
+            <p className="cr-dropzone-title">
               {dragOver ? "Drop your .docx here" : "Drag & drop your Word file"}
             </p>
-            <p className="text-xs text-gray-400 mt-0.5">
-              or <span className="text-purple-600 font-medium">click to browse</span>
-              &nbsp;· 40–50 pages supported · Max 20 MB
+            <p className="cr-dropzone-sub">
+              or <b>click to browse</b> · 40–50 pages supported · Max 20 MB
             </p>
           </div>
 
-          {/* What happens note */}
-          <div className="flex items-start gap-2 mt-1 px-4 py-2.5 bg-white rounded-xl border border-gray-100 text-left max-w-sm">
-            <Wand2 size={13} className="text-purple-500 mt-0.5 shrink-0" />
-            <p className="text-[11px] text-gray-500 leading-relaxed">
-              Your document will be parsed and re-applied with the <strong className="text-gray-700">Vedic template</strong> — header, footer &amp; decorative border on every page.
+          <div className="cr-dropzone-note">
+            <Wand2 size={13} />
+            <p>
+              Your document will be parsed and re-applied with the{" "}
+              <strong>Vedic template</strong> — header, footer &amp; decorative
+              border on every page.
             </p>
           </div>
         </div>
       )}
 
-      {/* Parsing state */}
       {status === "parsing" && (
-        <div className="flex flex-col items-center justify-center gap-3 py-8 border-2 border-dashed border-purple-200 rounded-xl bg-purple-50/40">
-          <div className="w-12 h-12 rounded-2xl bg-purple-100 flex items-center justify-center">
-            <Loader2 size={22} className="text-purple-500 animate-spin" />
+        <div className="cr-state-box parsing">
+          <div className="cr-state-icon-circle">
+            <Loader2 size={22} className="cr-spin" />
           </div>
-          <div className="text-center">
-            <p className="text-sm font-medium text-gray-700">Parsing document…</p>
-            <p className="text-xs text-gray-400 mt-0.5">Extracting content & applying Vedic template</p>
+          <div>
+            <p className="cr-state-title">Parsing document…</p>
+            <p className="cr-state-sub">
+              Extracting content & applying Vedic template
+            </p>
           </div>
-          {/* Fake progress bar */}
-          <div className="w-48 h-1.5 bg-purple-100 rounded-full overflow-hidden">
-            <div className="h-full bg-purple-400 rounded-full animate-[progress_2s_ease-in-out_infinite]"
-              style={{ width: "70%", animation: "pulse 1.5s ease-in-out infinite" }} />
+          <div className="cr-progress-track">
+            <div className="cr-progress-fill" />
           </div>
         </div>
       )}
 
-      {/* Success state */}
       {status === "done" && info && (
-        <div className="border border-green-200 bg-green-50 rounded-xl px-4 py-3">
-          <div className="flex items-start gap-3">
-            <div className="w-8 h-8 rounded-lg bg-green-100 flex items-center justify-center shrink-0">
-              <CheckCircle2 size={15} className="text-green-600" />
+        <div className="cr-success-box">
+          <div className="cr-success-row">
+            <div className="cr-success-icon">
+              <CheckCircle2 size={15} />
             </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-semibold text-green-800 truncate">{info.name}</p>
-              <div className="flex items-center gap-3 mt-1">
-                <span className="text-xs text-green-600 flex items-center gap-1">
-                  <BookOpen size={10} />
-                  ~{info.pages} pages detected
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <p className="cr-success-name">{info.name}</p>
+              <div className="cr-success-meta">
+                <span>
+                  <BookOpen size={10} /> ~{info.pages} pages detected
                 </span>
-                <span className="text-xs text-green-600 flex items-center gap-1">
-                  <CheckCircle2 size={10} />
-                  Content imported into editor
+                <span>
+                  <CheckCircle2 size={10} /> Content imported into editor
                 </span>
               </div>
               {info.warnings.length > 0 && (
-                <p className="text-[10px] text-amber-600 mt-1.5 flex items-center gap-1">
+                <p className="cr-success-warn">
                   <AlertCircle size={9} />
-                  {info.warnings.length} formatting note(s) — complex styles may need adjustment
+                  {info.warnings.length} formatting note(s) — complex styles may
+                  need adjustment
                 </p>
               )}
             </div>
           </div>
 
-          {/* Pipeline steps */}
-          <div className="mt-3 flex items-center gap-1.5 flex-wrap">
-            {["Content Extracted", "Vedic Header", "Vedic Footer", "Page Border", "PDF Ready"].map((step, i) => (
-              <div key={step} className="flex items-center gap-1">
-                <span className="text-[10px] px-2 py-0.5 bg-white border border-green-200 text-green-700 rounded-full font-medium">
-                  ✓ {step}
-                </span>
-                {i < 4 && <ChevronRight size={9} className="text-green-300" />}
+          <div className="cr-pipeline">
+            {[
+              "Content Extracted",
+              "Vedic Header",
+              "Vedic Footer",
+              "Page Border",
+              "PDF Ready",
+            ].map((step, i) => (
+              <div
+                key={step}
+                style={{ display: "flex", alignItems: "center", gap: 6 }}
+              >
+                <span className="cr-pipeline-step">✓ {step}</span>
+                {i < 4 && (
+                  <ChevronRight size={9} className="cr-pipeline-arrow" />
+                )}
               </div>
             ))}
           </div>
         </div>
       )}
 
-      {/* Error state */}
       {status === "error" && (
-        <div className="border border-red-200 bg-red-50 rounded-xl px-4 py-3">
-          <div className="flex items-start gap-3">
-            <AlertCircle size={16} className="text-red-500 mt-0.5 shrink-0" />
-            <div className="flex-1">
-              <p className="text-sm font-medium text-red-700">Import failed</p>
-              <p className="text-xs text-red-500 mt-0.5">{errorMsg}</p>
-              <button
-                type="button"
-                onClick={reset}
-                className="mt-2 text-xs text-red-600 underline hover:text-red-800"
-              >
+        <div className="cr-error-box">
+          <div className="cr-error-row">
+            <AlertCircle
+              size={16}
+              color="var(--danger)"
+              style={{ marginTop: 2, flexShrink: 0 }}
+            />
+            <div>
+              <p className="cr-error-title">Import failed</p>
+              <p className="cr-error-msg">{errorMsg}</p>
+              <button type="button" onClick={reset} className="cr-error-retry">
                 Try again
               </button>
             </div>
@@ -271,7 +269,6 @@ function DocxUploadCard({ onImport }) {
     </div>
   );
 }
-
 
 export default function CreateReport() {
   const { customers, loading } = useCustomers();
@@ -297,30 +294,32 @@ export default function CreateReport() {
     },
   });
 
-  const [selectedTemplate, content, userId] = watch(["template", "content", "userId"]);
+  const [selectedTemplate, content, userId] = watch([
+    "template",
+    "content",
+    "userId",
+  ]);
   const selectedCustomer = customers.find((c) => c._id === userId) ?? null;
 
   const applyTemplate = useCallback(
     (tplId) => {
       setValue("template", tplId, { shouldValidate: true });
       if (!content || content === "" || content.startsWith("<")) {
-        setValue("content", STARTER_TEMPLATES[tplId] ?? "", { shouldValidate: false });
+        setValue("content", STARTER_TEMPLATES[tplId] ?? "", {
+          shouldValidate: false,
+        });
       }
     },
-    [setValue, content]
+    [setValue, content],
   );
 
-  // Called when DOCX is imported
   const handleDocxImport = useCallback(
     (html, filename) => {
       setValue("content", html, { shouldValidate: false });
-      // Auto-set report title if empty
       const currentTitle = watch("title");
-      if (!currentTitle) {
-        setValue("title", filename, { shouldValidate: false });
-      }
+      if (!currentTitle) setValue("title", filename, { shouldValidate: false });
     },
-    [setValue, watch]
+    [setValue, watch],
   );
 
   const buildReport = (data) => ({
@@ -353,137 +352,131 @@ export default function CreateReport() {
     }
   };
 
-  // const selectedCustomer = useMemo(() => {
-  //   if (!selectedReport) return null;
-  //   return mockCustomers.find(c => c.email === selectedReport.userEmail) ?? null;
-  // }, [selectedReport]);
-
   return (
-    <div className="mx-auto space-y-6 animate-[fadeIn_0.4s_ease]">
-      <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+    <div>
+      <div className="cr-page-head">
+        <div className="cr-page-eyebrow">
+          <Sparkles size={11} /> New Report
+        </div>
+        <h1 className="cr-page-title">Create Report</h1>
+      </div>
 
-        {/* ── Template selector ────────────────────────────────────────── */}
-        <div className="bg-white border border-gray-200 rounded-2xl p-5 shadow-sm">
-          <h3 className="text-sm font-medium text-gray-700 mb-3 flex items-center gap-2">
-            <Sparkles size={14} className="text-purple-500" />
-            Choose Template
+      <form
+        onSubmit={handleSubmit(onSubmit)}
+        style={{ display: "flex", flexDirection: "column", gap: 18 }}
+      >
+        <div className="cr-form-card">
+          <h3 className="cr-form-card-title" style={{ marginBottom: 14 }}>
+            <Sparkles size={14} /> Choose Template
           </h3>
 
-          <div className="grid grid-cols-3 gap-3">
+          <div className="cr-grid-3">
             {TEMPLATES.map((tpl) => (
               <button
                 key={tpl.id}
                 type="button"
                 onClick={() => applyTemplate(tpl.id)}
-                className={`
-                  relative p-4 rounded-xl border text-left transition-all duration-200
-                  ${selectedTemplate === tpl.id
-                    ? "border-purple-400 bg-purple-50 shadow-sm"
-                    : "border-gray-200 bg-gray-50 hover:border-gray-300"
-                  }
-                `}
+                className={`cr-tpl-card ${selectedTemplate === tpl.id ? "active" : ""}`}
               >
                 {selectedTemplate === tpl.id && (
-                  <div className="absolute top-2 right-2">
-                    <CheckCircle2 size={14} className="text-purple-500" />
-                  </div>
+                  <CheckCircle2 size={14} className="cr-tpl-check" />
                 )}
-                <div className={`mb-2 ${selectedTemplate === tpl.id ? "text-purple-600" : "text-gray-400"}`}>
-                  {tpl.icon}
-                </div>
-                <p className={`font-semibold text-sm mb-0.5 ${selectedTemplate === tpl.id ? "text-gray-900" : "text-gray-700"}`}>
-                  {tpl.label}
-                </p>
-                <p className="text-xs text-gray-500 leading-tight">{tpl.desc}</p>
-                <Badge className="mt-2 bg-gray-100 text-gray-700 border border-gray-200">
-                  <Star size={8} className="mr-1" />
-                  {tpl.label}
-                </Badge>
+                <div className="cr-tpl-icon">{tpl.icon}</div>
+                <p className="cr-tpl-label">{tpl.label}</p>
+                <p className="cr-tpl-desc">{tpl.desc}</p>
+                <span className="cr-tpl-badge">
+                  <Star size={8} /> {tpl.label}
+                </span>
               </button>
             ))}
           </div>
         </div>
 
-        {/* ── Client + Title ───────────────────────────────────────────── */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          {/* Client */}
-          <div className="bg-white border border-gray-200 rounded-2xl p-5 shadow-sm">
-            <h3 className="text-sm font-medium text-gray-700 mb-3 flex items-center gap-2">
-              <User size={14} className="text-purple-500" />
-              Select Client
+        <div className="cr-grid-2">
+          <div className="cr-form-card">
+            <h3 className="cr-form-card-title" style={{ marginBottom: 14 }}>
+              <User size={14} /> Select Client
             </h3>
 
             <Controller
               name="userId"
               control={control}
               render={({ field }) => (
-                <Select
-                  {...field}
-                  error={errors.userId?.message}
-                  options={[
-                    { value: "", label: "— Choose a client —" },
-                    ...customers.map((c) => ({
-                      value: c._id,
-                      label: `${c.fullName} (${c.planName})`,
-                    })),
-                  ]}
-                />
+                <select {...field} className="cr-select">
+                  <option value="">— Choose a client —</option>
+                  {customers.map((c) => (
+                    <option key={c._id} value={c._id}>
+                      {c.fullName} ({c.planName})
+                    </option>
+                  ))}
+                </select>
               )}
             />
+            {errors.userId && (
+              <p className="cr-field-error">⚠ {errors.userId.message}</p>
+            )}
 
             {selectedCustomer && (
-              <div className="mt-3 p-3 bg-purple-50 border border-purple-200 rounded-xl">
-                <p className="text-xs font-medium text-gray-900">{selectedCustomer.name}</p>
-                <p className="text-[10px] text-gray-500">{selectedCustomer.email}</p>
-                <p className="text-[10px] text-gray-500 mt-0.5">
-                  DOB: {selectedCustomer.dob} · {selectedCustomer.tob} · {selectedCustomer.pobCity}
+              <div className="cr-client-preview">
+                <p className="cr-client-preview-name">
+                  {selectedCustomer.name}
                 </p>
-                <p className="text-[10px] text-purple-600 mt-0.5">
+                <p className="cr-client-preview-email">
+                  {selectedCustomer.email}
+                </p>
+                <p className="cr-client-preview-meta">
+                  DOB: {selectedCustomer.dob} · {selectedCustomer.tob} ·{" "}
+                  {selectedCustomer.pobCity}
+                </p>
+                <p className="cr-client-preview-concern">
                   Concern: {selectedCustomer.concern}
                 </p>
               </div>
             )}
           </div>
 
-          {/* Title + Notes */}
-          <div className="bg-white border border-gray-200 rounded-2xl p-5 shadow-sm space-y-4">
-            <Input
-              label="Report Title"
-              placeholder="e.g. Annual Vedic Horoscope 2024 — Priya Sharma"
-              error={errors.title?.message}
-              {...register("title")}
-            />
+          <div
+            className="cr-form-card"
+            style={{ display: "flex", flexDirection: "column", gap: 14 }}
+          >
+            <div>
+              <label className="cr-field-label">Report Title</label>
+              <div className="cr-field">
+                <input
+                  placeholder="e.g. Annual Vedic Horoscope 2024 — Priya Sharma"
+                  {...register("title")}
+                />
+              </div>
+              {errors.title && (
+                <p className="cr-field-error">⚠ {errors.title.message}</p>
+              )}
+            </div>
 
-            <div className="space-y-1.5">
-              <label className="block text-sm font-medium text-gray-700">
-                Admin Notes (optional)
-              </label>
+            <div>
+              <label className="cr-field-label">Admin Notes (optional)</label>
               <textarea
                 rows={3}
                 placeholder="Internal notes for reference…"
-                className="w-full bg-white border border-gray-200 rounded-lg px-4 py-2.5 text-sm text-gray-800 placeholder:text-gray-400 focus:outline-none focus:border-purple-400 focus:ring-1 focus:ring-purple-200 transition-all resize-none"
+                className="cr-textarea"
                 {...register("adminNotes")}
               />
               {errors.adminNotes && (
-                <p className="text-xs text-red-500">⚠ {errors.adminNotes.message}</p>
+                <p className="cr-field-error">⚠ {errors.adminNotes.message}</p>
               )}
             </div>
           </div>
         </div>
 
-        {/* ── DOCX Upload ──────────────────────────────────────────────── */}
         <DocxUploadCard onImport={handleDocxImport} />
 
-        {/* ── Rich Text Editor ─────────────────────────────────────────── */}
-        <div className="bg-white border border-gray-200 rounded-2xl p-5 shadow-sm">
-          <div className="flex items-center justify-between mb-3">
-            <h3 className="text-sm font-medium text-gray-700 flex items-center gap-2">
-              <PenLine size={14} className="text-purple-500" />
-              Report Content
+        <div className="cr-form-card">
+          <div className="cr-form-card-head">
+            <h3 className="cr-form-card-title">
+              <PenLine size={14} /> Report Content
             </h3>
-            <span className="text-[11px] text-gray-400 flex items-center gap-1">
-              <FileText size={10} />
-              You can type directly or import a .docx above
+            <span className="cr-editor-hint">
+              <FileText size={10} /> You can type directly or import a .docx
+              above
             </span>
           </div>
 
@@ -502,39 +495,40 @@ export default function CreateReport() {
           />
         </div>
 
-        {/* ── Action bar ───────────────────────────────────────────────── */}
-        <div className="flex items-center justify-between gap-3 bg-white border border-gray-200 rounded-2xl px-5 py-4 shadow-sm">
-          <div className="text-xs text-gray-500">
+        <div className="cr-action-bar">
+          <div className="cr-char-count">
             {content?.replace(/<[^>]+>/g, "").length ?? 0} characters
             {errors.content && (
-              <span className="text-red-500 ml-2">⚠ {errors.content.message}</span>
+              <span className="err">⚠ {errors.content.message}</span>
             )}
           </div>
 
-          <div className="flex items-center gap-2">
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
             {previewReport && (
               <>
-                <Button
+                <button
                   type="button"
-                  variant="secondary"
+                  className="cr-btn secondary"
                   onClick={handleDownloadPDF}
-                  loading={generating}
+                  disabled={generating}
                 >
-                  <Download size={14} />
+                  <Download size={14} />{" "}
                   {generating ? "Generating…" : "Download PDF"}
-                </Button>
-
-                <Button type="button" variant="secondary">
-                  <Eye size={14} />
-                  Preview
-                </Button>
+                </button>
+                <button type="button" className="cr-btn secondary">
+                  <Eye size={14} /> Preview
+                </button>
               </>
             )}
 
-            <Button type="submit" loading={isSubmitting} variant="primary" size="lg">
-              <FileText size={15} />
+            <button
+              type="submit"
+              className="cr-btn primary lg"
+              disabled={isSubmitting}
+            >
+              <FileText size={15} />{" "}
               {created ? "Recreate Report" : "Create Report"}
-            </Button>
+            </button>
           </div>
         </div>
       </form>
