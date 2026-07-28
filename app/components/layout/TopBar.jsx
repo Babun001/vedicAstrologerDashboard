@@ -14,6 +14,7 @@ const titles = {
 };
 
 const getName = (name) =>{
+  if (!name) return "";
   const initials = name.split(" ").map(w => w[0]).join("").toUpperCase();
   return initials;
 }

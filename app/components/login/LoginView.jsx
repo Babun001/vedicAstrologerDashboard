@@ -14,10 +14,15 @@ const LoginView = ({ onLogin, onSwitchToRegister }) => {
     try {
       setLoading(true);
 
+      if(!email & !password){
+        return;
+      }
+console.table(email, password);
       const response = await axiosInstanceClient.post("/astrologer/login", {
         email,
         password,
       });
+      
       // console.log("Astrologer login response:", response.data);
 
       // send data to parent component
