@@ -6,6 +6,7 @@ import { StatusPill } from "../common/StatusPill";
 import { Eyebrow } from "../common/Eyebrow";
 import axiosInstanceClient from "../services/client.services";
 import { STATUS_FROM_BACKEND } from "../data/statusMap";
+import { MyWorkSkeleton } from "../common/Skeleton";
 
 const Stat = ({ label, value, sub, tone }) => (
   <div className="cr-card cr-stat">
@@ -23,6 +24,7 @@ const Stat = ({ label, value, sub, tone }) => (
 );
 
 export const MyWorkView = () => {
+  const [loading, setLoading] = useState(true);
   const [workStats, setWorkStats] = useState({
     assigned: 0,
     delivered: 0,
@@ -34,6 +36,8 @@ export const MyWorkView = () => {
   useEffect(() => {
     const fetchWork = async () => {
       try {
+        setLoading(true);
+
         const [workResponse, reportsResponse] = await Promise.all([
           axiosInstanceClient.get("/astrologer/my-work"),
 
@@ -59,11 +63,22 @@ export const MyWorkView = () => {
         setTasks(flattenedReports);
       } catch (error) {
         console.error("Failed to fetch astrologer work:", error);
+      } finally {
+        setLoading(false);
       }
     };
 
     fetchWork();
   }, []);
+
+  if (loading) {
+    return (
+      <>
+        <Eyebrow>Today</Eyebrow>
+        <MyWorkSkeleton />
+      </>
+    );
+  }
 
   return (
     <>

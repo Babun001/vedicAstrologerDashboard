@@ -12,6 +12,7 @@ import { InboxView } from "../inbox/InboxView";
 import { TasksView } from "../tasks/TasksView";
 import axiosInstanceClient from "../services/client.services";
 import { useEffect } from "react";
+import { DashboardSkeleton } from "../common/Skeleton";
 
 export default function Dashboard() {
   const [authed, setAuthed] = useState(false);
@@ -22,13 +23,16 @@ export default function Dashboard() {
   const [selectedReport, setSelectedReport] = useState(null);
   const [astrologer, setAstrologer] = useState(null);
   const [authView, setAuthView] = useState("login");
+  const [profileLoading, setProfileLoading] = useState(false);
 
   useEffect(() => {
     if (!authed) return;
+    setProfileLoading(true);
     axiosInstanceClient
       .get("/astrologer/profile")
       .then((res) => setAstrologer(res.data.data.astrologer))
-      .catch((err) => console.error("Failed to load profile:", err));
+      .catch((err) => console.error("Failed to load profile:", err))
+      .finally(() => setProfileLoading(false));
   }, [authed]);
 
   const handleLogout = async () => {
@@ -88,35 +92,41 @@ export default function Dashboard() {
               opacity={0.07}
             />
 
-            <TopBar
-              view={view}
-              astrologer={astrologer}
-              onMenuClick={() => setMobileNavOpen(true)}
-            />
-
-            <div className="cr-content">
-              {view === "work" && <MyWorkView />}
-
-              {view === "inbox" && (
-                <InboxView
-                  activeConvo={activeConvo}
-                  setActiveConvo={setActiveConvo}
+            {profileLoading ? (
+              <DashboardSkeleton />
+            ) : (
+              <>
+                <TopBar
+                  view={view}
+                  astrologer={astrologer}
+                  onMenuClick={() => setMobileNavOpen(true)}
                 />
-              )}
 
-              {view === "tasks" && (
-                <TasksView
-                  onGenerateReport={(report) => {
-                    setSelectedReportId(report);
-                    setView("create-report");
-                  }}
-                />
-              )}
+                <div className="cr-content">
+                  {view === "work" && <MyWorkView />}
 
-              {view === "create-report" && (
-                <CreateReport report={selectedReportId} />
-              )}
-            </div>
+                  {view === "inbox" && (
+                    <InboxView
+                      activeConvo={activeConvo}
+                      setActiveConvo={setActiveConvo}
+                    />
+                  )}
+
+                  {view === "tasks" && (
+                    <TasksView
+                      onGenerateReport={(report) => {
+                        setSelectedReportId(report);
+                        setView("create-report");
+                      }}
+                    />
+                  )}
+
+                  {view === "create-report" && (
+                    <CreateReport report={selectedReportId} />
+                  )}
+                </div>
+              </>
+            )}
           </main>
         </div>
       )}

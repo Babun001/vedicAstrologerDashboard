@@ -13,7 +13,8 @@ import { TaskModal } from "./TaskModal";
 import { columns, columnColors } from "../data/demoData";
 
 import axiosInstanceClient from "../services/client.services";
-import {STATUS_TO_BACKEND,STATUS_FROM_BACKEND} from "../data/statusMap";
+import { STATUS_TO_BACKEND, STATUS_FROM_BACKEND } from "../data/statusMap";
+import { KanbanSkeleton } from "../common/Skeleton";
 
 // Frontend -> Backend
 // const STATUS_TO_BACKEND = {
@@ -30,6 +31,7 @@ import {STATUS_TO_BACKEND,STATUS_FROM_BACKEND} from "../data/statusMap";
 // };
 
 export const TasksView = ({ onGenerateReport }) => {
+  const [loading, setLoading] = useState(true);
   const [tasks, setTasks] = useState([]);
   const [draggingId, setDraggingId] = useState(null);
   const [overCol, setOverCol] = useState(null);
@@ -39,6 +41,8 @@ export const TasksView = ({ onGenerateReport }) => {
   useEffect(() => {
     const fetchReports = async () => {
       try {
+        setLoading(true);
+
         const res = await axiosInstanceClient.get("/astrologer/reports");
 
         const board = res.data.data.board;
@@ -64,6 +68,8 @@ export const TasksView = ({ onGenerateReport }) => {
         setTasks(formattedTasks);
       } catch (error) {
         console.error("Failed fetching reports:", error);
+      } finally {
+        setLoading(false);
       }
     };
 
@@ -121,6 +127,10 @@ export const TasksView = ({ onGenerateReport }) => {
   };
 
   const selectedTask = tasks.find((t) => t.id === selectedId) || null;
+
+  if (loading) {
+    return <KanbanSkeleton columnCount={columns.length} />;
+  }
 
   return (
     <div className="cr-kanban">
