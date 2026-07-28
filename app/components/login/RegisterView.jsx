@@ -5,7 +5,6 @@ import {
   User,
   Mail,
   Phone,
-  Lock,
   Briefcase,
   Sparkles,
   Languages,
@@ -15,8 +14,38 @@ import {
 } from "lucide-react";
 import { LotusWatermark } from "../common/LotusWatermark";
 import axiosInstanceClient from "../services/client.services";
+import {
+  PasswordField,
+  MultiSelectDropdown,
+  AuthCardSkeleton,
+} from "./Registerformhelpers";
+import { useToast } from "../context/ToastContext";
+import "./Registerform.css";
 
-const RegisterView = ({ onSwitchToLogin }) => {
+const EXPERTISE_OPTIONS = [
+  "Vedic",
+  "Numerology",
+  "Tarot",
+  "Vastu",
+  "Palmistry",
+  "Face Reading",
+  "KP",
+  "Nadi",
+];
+
+const LANGUAGE_OPTIONS = [
+  "Hindi",
+  "English",
+  "Bengali",
+  "Marathi",
+  "Gujarati",
+  "Tamil",
+  "Telugu",
+];
+
+const RegisterForm = ({ onSwitchToLogin }) => {
+  const toast = useToast();
+  const [pageLoading] = useState(false); // set true + wire useEffect if this page ever needs an initial fetch
   const [form, setForm] = useState({
     name: "",
     email: "",
@@ -24,8 +53,8 @@ const RegisterView = ({ onSwitchToLogin }) => {
     password: "",
     confirmPassword: "",
     experience: "",
-    expertise: "",
-    languages: "",
+    expertise: [],
+    languages: [],
     bio: "",
   });
   const [loading, setLoading] = useState(false);
@@ -34,6 +63,9 @@ const RegisterView = ({ onSwitchToLogin }) => {
 
   const update = (field) => (e) =>
     setForm((prev) => ({ ...prev, [field]: e.target.value }));
+
+  const updateList = (field) => (values) =>
+    setForm((prev) => ({ ...prev, [field]: values }));
 
   const validate = () => {
     if (!form.name.trim()) return "Full name is required.";
@@ -50,6 +82,7 @@ const RegisterView = ({ onSwitchToLogin }) => {
     const validationError = validate();
     if (validationError) {
       setErrorMsg(validationError);
+      toast.error(validationError);
       return;
     }
 
@@ -63,31 +96,29 @@ const RegisterView = ({ onSwitchToLogin }) => {
         phone: form.phone.trim(),
         password: form.password,
         experience: Number(form.experience) || 0,
-        expertise: form.expertise
-          .split(",")
-          .map((s) => s.trim())
-          .filter(Boolean),
-        languages: form.languages
-          .split(",")
-          .map((s) => s.trim())
-          .filter(Boolean),
+        expertise: form.expertise,
+        languages: form.languages,
         bio: form.bio.trim(),
       });
 
+      toast.success("Application submitted successfully!");
       setSubmitted(true);
     } catch (error) {
       console.error(
         "Astrologer registration failed:",
         error.response?.data || error.message,
       );
-      setErrorMsg(
+      const msg =
         error.response?.data?.message ||
-          "Registration failed. Please try again.",
-      );
+        "Registration failed. Please try again.";
+      setErrorMsg(msg);
+      toast.error(msg);
     } finally {
       setLoading(false);
     }
   };
+
+  if (pageLoading) return <AuthCardSkeleton />;
 
   if (submitted) {
     return (
@@ -134,7 +165,7 @@ const RegisterView = ({ onSwitchToLogin }) => {
   return (
     <div className="cr-login-wrap">
       <LotusWatermark className="cr-login-mandala" size={780} opacity={0.14} />
-      <div className="cr-login-card cr-login-card--wide">
+      <div className="cr-login-card cr-login-card--wide new">
         <img
           src="/image.webp"
           alt="Cosmic Remedies"
@@ -156,7 +187,8 @@ const RegisterView = ({ onSwitchToLogin }) => {
           </div>
         )}
 
-        <div className="cr-field-row">
+        {/* Row 1: Full Name + Phone */}
+        <div className="cr-row-2col">
           <div className="cr-field-col">
             <label className="cr-field-label">Full Name</label>
             <div className="cr-field">
@@ -181,6 +213,7 @@ const RegisterView = ({ onSwitchToLogin }) => {
           </div>
         </div>
 
+        {/* Row 2: Email (own row) */}
         <label className="cr-field-label">Email</label>
         <div className="cr-field">
           <Mail size={15} color="#9C8A6A" />
@@ -191,70 +224,66 @@ const RegisterView = ({ onSwitchToLogin }) => {
           />
         </div>
 
-        <div className="cr-field-row">
+        {/* Row 3: Password + Confirm Password */}
+        <div className="cr-row-2col">
           <div className="cr-field-col">
             <label className="cr-field-label">Password</label>
-            <div className="cr-field">
-              <Lock size={15} color="#9C8A6A" />
-              <input
-                type="password"
-                value={form.password}
-                onChange={update("password")}
-                placeholder="••••••••"
-              />
-            </div>
+            <PasswordField
+              name="password"
+              value={form.password}
+              onChange={update("password")}
+              placeholder="••••••••"
+            />
           </div>
           <div className="cr-field-col">
             <label className="cr-field-label">Confirm Password</label>
-            <div className="cr-field">
-              <Lock size={15} color="#9C8A6A" />
-              <input
-                type="password"
-                value={form.confirmPassword}
-                onChange={update("confirmPassword")}
-                placeholder="••••••••"
-              />
-            </div>
+            <PasswordField
+              name="confirmPassword"
+              value={form.confirmPassword}
+              onChange={update("confirmPassword")}
+              placeholder="••••••••"
+            />
           </div>
         </div>
 
-        <div className="cr-field-row">
-          <div className="cr-field-col">
-            <label className="cr-field-label">Years of Experience</label>
-            <div className="cr-field">
-              <Briefcase size={15} color="#9C8A6A" />
-              <input
-                type="number"
-                min="0"
-                value={form.experience}
-                onChange={update("experience")}
-                placeholder="5"
-              />
-            </div>
-          </div>
-          <div className="cr-field-col">
-            <label className="cr-field-label">Expertise</label>
-            <div className="cr-field">
-              <Sparkles size={15} color="#9C8A6A" />
-              <input
-                value={form.expertise}
-                onChange={update("expertise")}
-                placeholder="Vedic, Numerology"
-              />
-            </div>
-          </div>
-        </div>
-
-        <label className="cr-field-label">Languages</label>
+        {/* Row 4: Years of Experience (own row) */}
+        <label className="cr-field-label">Years of Experience</label>
         <div className="cr-field">
-          <Languages size={15} color="#9C8A6A" />
+          <Briefcase size={15} color="#9C8A6A" />
           <input
-            value={form.languages}
-            onChange={update("languages")}
-            placeholder="Hindi, English"
+            type="number"
+            min="0"
+            value={form.experience}
+            onChange={update("experience")}
+            placeholder="5"
           />
         </div>
 
+        {/* Row 5: Expertise + Languages (both dropdowns) */}
+        <div className="cr-row-2col">
+          <div className="cr-field-col">
+            <label className="cr-field-label">Expertise</label>
+            <MultiSelectDropdown
+              icon={<Sparkles size={15} color="#9C8A6A" />}
+              options={EXPERTISE_OPTIONS}
+              selected={form.expertise}
+              onChange={updateList("expertise")}
+              placeholder="Select expertise"
+            />
+          </div>
+          <div className="cr-field-col">
+            <label className="cr-field-label">Languages</label>
+            <MultiSelectDropdown
+              icon={<Languages size={15} color="#9C8A6A" />}
+              options={LANGUAGE_OPTIONS}
+              selected={form.languages}
+              onChange={updateList("languages")}
+              placeholder="Select languages"
+            />
+          </div>
+        </div>
+
+        {/* Row 6: Short Bio (own row) */}
         <label className="cr-field-label">Short Bio</label>
         <div className="cr-field cr-field-textarea">
           <FileText size={15} color="#9C8A6A" style={{ marginTop: 2 }} />
@@ -292,4 +321,4 @@ const RegisterView = ({ onSwitchToLogin }) => {
   );
 };
 
-export default RegisterView;
+export default RegisterForm;

@@ -1,11 +1,16 @@
 "use client";
 
 import { useState } from "react";
-import { Lock, Mail } from "lucide-react";
+import { Mail } from "lucide-react";
 import { LotusWatermark } from "../common/LotusWatermark";
 import axiosInstanceClient from "../services/client.services";
+import { PasswordField, AuthCardSkeleton } from "./Registerformhelpers";
+import { useToast } from "../context/ToastContext";
+import "./Registerform.css";
 
 const LoginView = ({ onLogin, onSwitchToRegister }) => {
+  const toast = useToast();
+  const [pageLoading] = useState(false); // set true + wire useEffect if this page ever needs an initial fetch (e.g. checking existing session)
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -18,11 +23,10 @@ const LoginView = ({ onLogin, onSwitchToRegister }) => {
         email,
         password,
       });
-      // console.log("Astrologer login response:", response.data);
 
-      // send data to parent component
-      localStorage.setItem("astrologerToken", response.data.data.accessToken); // ADD THIS
+      localStorage.setItem("astrologerToken", response.data.data.accessToken);
 
+      toast.success("Signed in successfully!");
       onLogin(response.data);
     } catch (error) {
       console.error(
@@ -30,11 +34,13 @@ const LoginView = ({ onLogin, onSwitchToRegister }) => {
         error.response?.data || error.message,
       );
 
-      alert(error.response?.data?.message || "Login failed");
+      toast.error(error.response?.data?.message || "Login failed");
     } finally {
       setLoading(false);
     }
   };
+
+  if (pageLoading) return <AuthCardSkeleton fields={2} />;
 
   return (
     <div className="cr-login-wrap">
@@ -58,19 +64,18 @@ const LoginView = ({ onLogin, onSwitchToRegister }) => {
         </div>
 
         <label className="cr-field-label">Password</label>
-        <div className="cr-field">
-          <Lock size={15} color="#9C8A6A" />
-          <input
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            placeholder="••••••••"
-          />
-        </div>
+        <PasswordField
+          name="password"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          placeholder="••••••••"
+        />
+
         <button
           className="cr-login-btn"
           onClick={handleLogin}
           disabled={loading}
+          style={{ marginTop: 4 }}
         >
           {loading ? "Signing in..." : "Sign in"}
         </button>

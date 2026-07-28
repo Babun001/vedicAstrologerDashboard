@@ -1,16 +1,33 @@
 "use client";
+import { useEffect, useState } from "react";
 import { Send } from "lucide-react";
 import { StatusPill } from "../common/StatusPill";
-import {
-  threadMessages,
-  conversations,
-} from "../data/demoData";
-
+import { threadMessages, conversations } from "../data/demoData";
+import { InboxSkeleton } from "../common/Skeleton";
 
 export const InboxView = ({ activeConvo, setActiveConvo }) => {
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    // TODO: replace this simulated delay with the real fetch once the
+    // inbox API exists, e.g.:
+    //
+    // axiosInstanceClient.get("/astrologer/inbox")
+    //   .then((res) => setConversations(res.data.data))
+    //   .catch((err) => console.error("Failed to load inbox:", err))
+    //   .finally(() => setLoading(false));
+    const timer = setTimeout(() => setLoading(false), 500);
+    return () => clearTimeout(timer);
+  }, []);
+
   const convo =
     conversations.find((c) => c.id === activeConvo) || conversations[0];
   const messages = threadMessages[activeConvo] || threadMessages.c2;
+
+  if (loading) {
+    return <InboxSkeleton />;
+  }
+
   return (
     <div className="cr-inbox-layout">
       <div className="cr-convo-list">
