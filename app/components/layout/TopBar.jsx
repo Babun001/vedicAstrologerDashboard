@@ -12,7 +12,12 @@ const titles = {
     "Generate a new astrology report"
   ],
 };
-export const TopBar = ({ view, onMenuClick }) => (
+
+const getName = (name) =>{
+  const initials = name.split(" ").map(w => w[0]).join("").toUpperCase();
+  return initials;
+}
+export const TopBar = ({ view,astrologer, onMenuClick }) => (
   <div className="cr-topbar">
     <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
       <div className="cr-hamburger" onClick={onMenuClick}>
@@ -29,7 +34,7 @@ export const TopBar = ({ view, onMenuClick }) => (
         Search clients, threads, tasks
       </div>
       <NotificationBell />
-      <div className="cr-avatar">RS</div>
+      <div className="cr-avatar">{getName(astrologer?.name)}</div>
     </div>
   </div>
 );

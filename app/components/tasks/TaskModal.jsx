@@ -1,7 +1,7 @@
 import { CheckCircle2 } from "lucide-react";
 import { StatusPill } from "../common/StatusPill";
 
-export const TaskModal = ({ task, accent, onClose, onMove }) => (
+export const TaskModal = ({ task, accent, onClose, onGenerate }) => (
   <div className="cr-modal-backdrop" onClick={onClose}>
     <div
       className="cr-modal"
@@ -78,7 +78,7 @@ export const TaskModal = ({ task, accent, onClose, onMove }) => (
             : "pending upload"}
         </div>
 
-        <div className="cr-modal-actions">
+        {/* <div className="cr-modal-actions">
           {task.status !== "ready" && task.status !== "delivered" && (
             <div
               className="cr-modal-btn primary"
@@ -95,6 +95,21 @@ export const TaskModal = ({ task, accent, onClose, onMove }) => (
               Mark delivered
             </div>
           )}
+          <div className="cr-modal-btn ghost" onClick={onClose}>
+            Close
+          </div>
+        </div> */}
+
+        <div className="cr-modal-actions">
+          {task.status !== "ready" && task.status !== "delivered" && (
+            <div
+              className="cr-modal-btn primary"
+              onClick={() => onGenerate(task)}
+            >
+              Generate Report
+            </div>
+          )}
+
           <div className="cr-modal-btn ghost" onClick={onClose}>
             Close
           </div>

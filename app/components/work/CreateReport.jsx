@@ -2,18 +2,13 @@
 
 import { useState, useCallback, useRef } from "react";
 import { useForm, Controller } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { reportSchema } from "../lib/schemas";
-import { useCustomers } from "../hooks/useCustomers";
-import { generateReportPDF } from "../lib/pdf-generator";
-import { parseDocxToHtml } from "../lib/docx-parser";
 import { RichEditor } from "../utils/RichEditor";
 import { ReportPreviewModal } from "../utils/ReportPreviewModal";
+import { parseDocxToHtml } from "../lib/docx-parser";
 import {
   Sparkles,
   FileText,
   PenLine,
-  User,
   Eye,
   Download,
   CheckCircle2,
@@ -27,6 +22,7 @@ import {
   Wand2,
   ChevronRight,
 } from "lucide-react";
+import axiosInstanceClient from "../services/client.services";
 
 const TEMPLATES = [
   {
@@ -270,11 +266,18 @@ function DocxUploadCard({ onImport }) {
   );
 }
 
-export default function CreateReport() {
-  const { customers, loading } = useCustomers();
+/**
+ * `report` is the task object clicked in TasksView/MyWorkView — it must
+ * carry at least `reportId` (the real backend Report._id) and, once the
+ * backend populates it, `clientName`/`clientEmail`. There is no client
+ * picker here on purpose: which client this report is for is fixed by
+ * the backend the moment the order was paid — the astrologer doesn't
+ * choose it.
+ */
+export default function CreateReport({ report }) {
   const [previewReport, setPreviewReport] = useState(null);
   const [created, setCreated] = useState(false);
-  const [generating, setGenerating] = useState(false);
+  const [submitError, setSubmitError] = useState("");
 
   const {
     register,
@@ -284,22 +287,10 @@ export default function CreateReport() {
     setValue,
     formState: { errors, isSubmitting },
   } = useForm({
-    resolver: zodResolver(reportSchema),
-    defaultValues: {
-      userId: "",
-      title: "",
-      content: "",
-      template: "free",
-      adminNotes: "",
-    },
+    defaultValues: { content: "", template: "free", title: "", adminNotes: "" },
   });
 
-  const [selectedTemplate, content, userId] = watch([
-    "template",
-    "content",
-    "userId",
-  ]);
-  const selectedCustomer = customers.find((c) => c._id === userId) ?? null;
+  const [selectedTemplate, content] = watch(["template", "content"]);
 
   const applyTemplate = useCallback(
     (tplId) => {
@@ -322,33 +313,36 @@ export default function CreateReport() {
     [setValue, watch],
   );
 
-  const buildReport = (data) => ({
-    id: `r-${Date.now()}`,
-    userId: data.userId,
-    userName: selectedCustomer?.name ?? "Unknown",
-    userEmail: selectedCustomer?.email ?? "",
-    title: data.title,
-    content: data.content,
-    template: data.template,
-    status: "created",
-    createdAt: new Date().toISOString(),
-    adminNotes: data.adminNotes,
-  });
-
   const onSubmit = async (data) => {
-    await new Promise((r) => setTimeout(r, 400));
-    const report = buildReport(data);
-    setPreviewReport(report);
-    setCreated(true);
-  };
+    setSubmitError("");
 
-  const handleDownloadPDF = async () => {
-    if (!previewReport) return;
-    setGenerating(true);
+    if (!report?.reportId) {
+      setSubmitError("No report selected — go back to the task board and open a task first.");
+      return;
+    }
+
     try {
-      await generateReportPDF(previewReport, selectedCustomer);
-    } finally {
-      setGenerating(false);
+      const finalContent = data.title
+        ? `<h1>${data.title}</h1>${data.content}`
+        : data.content;
+
+      const response = await axiosInstanceClient.post(
+        `/astrologer/reports/${report.reportId}/generate`,
+        { content: finalContent },
+      );
+
+      setPreviewReport({
+        title: data.title,
+        content: finalContent,
+        cdnUrl: response.data?.data?.report?.cdnUrl,
+      });
+      setCreated(true);
+    } catch (error) {
+      console.error("Generate report failed:", error.response?.data || error);
+      setSubmitError(
+        error.response?.data?.message ||
+          "Failed to generate report. Make sure this task is in 'Processing' before generating.",
+      );
     }
   };
 
@@ -395,44 +389,12 @@ export default function CreateReport() {
         <div className="cr-grid-2">
           <div className="cr-form-card">
             <h3 className="cr-form-card-title" style={{ marginBottom: 14 }}>
-              <User size={14} /> Select Client
+              Client
             </h3>
-
-            <Controller
-              name="userId"
-              control={control}
-              render={({ field }) => (
-                <select {...field} className="cr-select">
-                  <option value="">— Choose a client —</option>
-                  {customers.map((c) => (
-                    <option key={c._id} value={c._id}>
-                      {c.fullName} ({c.planName})
-                    </option>
-                  ))}
-                </select>
-              )}
-            />
-            {errors.userId && (
-              <p className="cr-field-error">⚠ {errors.userId.message}</p>
-            )}
-
-            {selectedCustomer && (
-              <div className="cr-client-preview">
-                <p className="cr-client-preview-name">
-                  {selectedCustomer.name}
-                </p>
-                <p className="cr-client-preview-email">
-                  {selectedCustomer.email}
-                </p>
-                <p className="cr-client-preview-meta">
-                  DOB: {selectedCustomer.dob} · {selectedCustomer.tob} ·{" "}
-                  {selectedCustomer.pobCity}
-                </p>
-                <p className="cr-client-preview-concern">
-                  Concern: {selectedCustomer.concern}
-                </p>
-              </div>
-            )}
+            <div className="cr-client-preview">
+              <p>Client: {report?.clientName || report?.client || "—"}</p>
+              <p>Email: {report?.clientEmail || "—"}</p>
+            </div>
           </div>
 
           <div
@@ -447,9 +409,6 @@ export default function CreateReport() {
                   {...register("title")}
                 />
               </div>
-              {errors.title && (
-                <p className="cr-field-error">⚠ {errors.title.message}</p>
-              )}
             </div>
 
             <div>
@@ -460,9 +419,6 @@ export default function CreateReport() {
                 className="cr-textarea"
                 {...register("adminNotes")}
               />
-              {errors.adminNotes && (
-                <p className="cr-field-error">⚠ {errors.adminNotes.message}</p>
-              )}
             </div>
           </div>
         </div>
@@ -483,6 +439,7 @@ export default function CreateReport() {
           <Controller
             name="content"
             control={control}
+            rules={{ required: "Report content is required" }}
             render={({ field }) => (
               <RichEditor
                 value={field.value}
@@ -495,6 +452,15 @@ export default function CreateReport() {
           />
         </div>
 
+        {submitError && (
+          <div className="cr-error-box">
+            <div className="cr-error-row">
+              <AlertCircle size={16} color="var(--danger)" style={{ marginTop: 2, flexShrink: 0 }} />
+              <p className="cr-error-msg">{submitError}</p>
+            </div>
+          </div>
+        )}
+
         <div className="cr-action-bar">
           <div className="cr-char-count">
             {content?.replace(/<[^>]+>/g, "").length ?? 0} characters
@@ -504,21 +470,25 @@ export default function CreateReport() {
           </div>
 
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            {previewReport?.cdnUrl && (
+              <a
+                href={previewReport.cdnUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="cr-btn secondary"
+              >
+                <Download size={14} /> View Generated PDF
+              </a>
+            )}
+
             {previewReport && (
-              <>
-                <button
-                  type="button"
-                  className="cr-btn secondary"
-                  onClick={handleDownloadPDF}
-                  disabled={generating}
-                >
-                  <Download size={14} />{" "}
-                  {generating ? "Generating…" : "Download PDF"}
-                </button>
-                <button type="button" className="cr-btn secondary">
-                  <Eye size={14} /> Preview
-                </button>
-              </>
+              <button
+                type="button"
+                className="cr-btn secondary"
+                onClick={() => setCreated(true)}
+              >
+                <Eye size={14} /> Preview
+              </button>
             )}
 
             <button
@@ -527,7 +497,7 @@ export default function CreateReport() {
               disabled={isSubmitting}
             >
               <FileText size={15} />{" "}
-              {created ? "Recreate Report" : "Create Report"}
+              {isSubmitting ? "Generating…" : created ? "Regenerate Report" : "Generate Report"}
             </button>
           </div>
         </div>
@@ -537,7 +507,7 @@ export default function CreateReport() {
         open={!!previewReport && created}
         onClose={() => setCreated(false)}
         report={previewReport}
-        customer={selectedCustomer}
+        customer={null}
       />
     </div>
   );
