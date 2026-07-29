@@ -18,10 +18,16 @@ const axiosInstanceClient = axios.create({
 });
 
 axiosInstanceClient.interceptors.request.use((config) => {
-    const token = typeof window !== 'undefined' ? localStorage.getItem('astrologerToken') : null;
+    const token =
+        typeof window !== "undefined"
+            ? localStorage.getItem("astrologerToken")
+            : null;
+
     if (token) {
+        config.headers = config.headers ?? {};
         config.headers.Authorization = `Bearer ${token}`;
     }
+
     return config;
 });
 
