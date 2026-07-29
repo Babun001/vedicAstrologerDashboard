@@ -9,9 +9,7 @@ import {
 } from "lucide-react";
 
 import { TaskModal } from "./TaskModal";
-
 import { columns, columnColors } from "../data/demoData";
-
 import axiosInstanceClient from "../services/client.services";
 import { STATUS_TO_BACKEND, STATUS_FROM_BACKEND } from "../data/statusMap";
 import { KanbanSkeleton } from "../common/Skeleton";
@@ -38,42 +36,55 @@ export const TasksView = ({ onGenerateReport }) => {
   const [selectedId, setSelectedId] = useState(null);
   const [generateReportId, setGenerateReportId] = useState(null);
 
+  const fetchReports = async () => {
+    try {
+      setLoading(true);
+      const res = await axiosInstanceClient.get("/astrologer/reports");
+      const board = res.data.data.board;
+      const reports = [
+        ...board.pending,
+        ...board.processing,
+        ...board.completed,
+        ...board.delivered,
+      ];
+
+      const formattedTasks = reports.map((report) => ({
+        id: report._id,
+        reportId: report._id,
+        client: report.leadId?.fullName || "Unknown Client",
+        service: report.concern || "Astrology Report",
+        due: report.dueAt || "-",
+        priority: report.priority || "medium",
+        who: report.assignedTo?.name || "—",
+        status: STATUS_FROM_BACKEND[report.status],
+        adminReview: report.adminReview,
+        content: report.content,
+      }));
+
+      setTasks(formattedTasks);
+    } catch (error) {
+      console.error("Failed fetching reports:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
-    const fetchReports = async () => {
-      try {
-        setLoading(true);
-
-        const res = await axiosInstanceClient.get("/astrologer/reports");
-
-        const board = res.data.data.board;
-
-        const reports = [
-          ...board.pending,
-          ...board.processing,
-          ...board.completed,
-          ...board.delivered,
-        ];
-
-        const formattedTasks = reports.map((report) => ({
-          id: report._id,
-          reportId: report._id, // ADD THIS — keep the real id under an unambiguous name
-          client: report.leadId?.fullName || "Unknown Client", // also fixes blank names, see Step 5
-          service: report.concern || "Astrology Report",
-          due: report.dueAt || "-",
-          priority: report.priority || "medium",
-          who: report.assignedTo?.name || "—",
-          status: STATUS_FROM_BACKEND[report.status],
-        }));
-
-        setTasks(formattedTasks);
-      } catch (error) {
-        console.error("Failed fetching reports:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
     fetchReports();
+  }, []);
+
+  useEffect(() => {
+    const token = localStorage.getItem("astrologerToken");
+    if (!token) return;
+
+    const streamUrl = `${axiosInstanceClient.defaults.baseURL}/astrologer/stream?token=${token}`;
+    const es = new EventSource(streamUrl);
+
+    es.addEventListener("new-task-assigned", () => {
+      fetchReports();
+    });
+
+    return () => es.close();
   }, []);
 
   const updateStatus = async (id, newStatus) => {
@@ -198,7 +209,23 @@ export const TasksView = ({ onGenerateReport }) => {
                     <GripVertical size={13} color="var(--text-faint)" />
                   </div>
 
-                  <div className="cr-kservice">{t.service}</div>
+                  {t.adminReview?.status === "rejected" && (
+                    <div
+                      style={{
+                        fontSize: 10,
+                        color: "#b03a2e",
+                        background: "rgba(176,58,46,0.1)",
+                        borderRadius: 6,
+                        padding: "3px 8px",
+                        marginTop: 6,
+                        marginBottom: 4,
+                        fontWeight: 600,
+                        display: "inline-block",
+                      }}
+                    >
+                      ⚠ Revision requested
+                    </div>
+                  )}
 
                   <div className="cr-kmeta-row">
                     <span className={`cr-priority ${t.priority}`} />
@@ -240,6 +267,7 @@ export const TasksView = ({ onGenerateReport }) => {
         <TaskModal
           task={selectedTask}
           accent={columnColors[selectedTask.status]}
+          onClose={() => setSelectedId(null)}
           onGenerate={(task) => {
             onGenerateReport(task);
             setSelectedId(null);

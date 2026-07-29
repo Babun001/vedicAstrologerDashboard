@@ -23,52 +23,61 @@ const Stat = ({ label, value, sub, tone }) => (
   </div>
 );
 
-export const MyWorkView = () => {
+export const MyWorkView = ({ onViewTasks }) => {
   const [loading, setLoading] = useState(true);
   const [workStats, setWorkStats] = useState({
     assigned: 0,
     delivered: 0,
     due: 0,
+    capacity: { used: 0, limit: 0 },
+    rating: { avg: 0, total: 0 },
   });
 
   const [tasks, setTasks] = useState([]);
 
+  const fetchWork = async () => {
+    try {
+      setLoading(true);
+
+      const [workResponse, reportsResponse] = await Promise.all([
+        axiosInstanceClient.get("/astrologer/my-work"),
+        axiosInstanceClient.get("/astrologer/reports"),
+      ]);
+
+      setWorkStats(workResponse.data.data);
+
+      const board = reportsResponse.data.data.board;
+      const flattenedReports = [
+        ...board.pending,
+        ...board.processing,
+        ...board.completed,
+        ...board.delivered,
+      ];
+
+      setTasks(flattenedReports);
+    } catch (error) {
+      console.error("Failed to fetch astrologer work:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
-    const fetchWork = async () => {
-      try {
-        setLoading(true);
-
-        const [workResponse, reportsResponse] = await Promise.all([
-          axiosInstanceClient.get("/astrologer/my-work"),
-
-          axiosInstanceClient.get("/astrologer/reports"),
-        ]);
-
-        console.log("My work:", workResponse.data);
-
-        console.log("Reports:", reportsResponse.data);
-
-        setWorkStats(workResponse.data.data);
-
-        const board = reportsResponse.data.data.board;
-
-        // Flatten all report statuses
-        const flattenedReports = [
-          ...board.pending,
-          ...board.processing,
-          ...board.completed,
-          ...board.delivered,
-        ];
-
-        setTasks(flattenedReports);
-      } catch (error) {
-        console.error("Failed to fetch astrologer work:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
     fetchWork();
+  }, []);
+
+  useEffect(() => {
+    const token = localStorage.getItem("astrologerToken");
+    if (!token) return;
+
+    const streamUrl = `${axiosInstanceClient.defaults.baseURL}/astrologer/stream?token=${token}`;
+    const es = new EventSource(streamUrl);
+
+    es.addEventListener("new-task-assigned", () => {
+      fetchWork();
+    });
+
+    return () => es.close();
   }, []);
 
   if (loading) {
@@ -80,9 +89,51 @@ export const MyWorkView = () => {
     );
   }
 
+  const rejectedTasks = tasks.filter((t) => t.adminReview?.status === "rejected");
+
   return (
     <>
       <Eyebrow>Today</Eyebrow>
+
+      {rejectedTasks.length > 0 && (
+        <div
+          className="cr-card"
+          style={{
+            marginBottom: 18,
+            padding: "14px 16px",
+            background: "rgba(176,58,46,0.06)",
+            border: "1px solid rgba(176,58,46,0.3)",
+          }}
+        >
+          <div style={{ fontWeight: 700, fontSize: 13, color: "#b03a2e", marginBottom: 8 }}>
+            ⚠ {rejectedTasks.length} report{rejectedTasks.length === 1 ? "" : "s"} sent back for revision
+          </div>
+          {rejectedTasks.map((t) => (
+            <div
+              key={t._id}
+              style={{
+                fontSize: 12, color: "var(--text-dim)", marginBottom: 6,
+                display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10,
+              }}
+            >
+              <span>
+                <strong>{t.leadId?.fullName || "Unknown Client"}</strong>
+                {t.adminReview?.reviewNote ? ` — ${t.adminReview.reviewNote}` : ""}
+              </span>
+              <button
+                onClick={onViewTasks}
+                style={{
+                  fontSize: 11, color: "#b03a2e", background: "none",
+                  border: "1px solid rgba(176,58,46,0.4)", borderRadius: 6,
+                  padding: "3px 10px", cursor: "pointer", whiteSpace: "nowrap",
+                }}
+              >
+                Review →
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
 
       <div className="cr-stat-grid">
         <Stat
@@ -104,8 +155,17 @@ export const MyWorkView = () => {
           tone="success"
         />
 
-        {/* No backend API yet */}
-        <Stat label="Replied" value="-" sub="Inbox analytics coming soon" />
+        <Stat
+          label="Today's capacity"
+          value={`${workStats.capacity?.used ?? 0} / ${workStats.capacity?.limit ?? 0}`}
+          sub="Active tasks vs. daily limit"
+        />
+
+        <Stat
+          label="Your rating"
+          value={workStats.rating?.total > 0 ? `${workStats.rating.avg.toFixed(1)} ★` : "—"}
+          sub={workStats.rating?.total > 0 ? `${workStats.rating.total} review${workStats.rating.total === 1 ? "" : "s"}` : "No ratings yet"}
+        />
       </div>
 
       <div className="cr-card" style={{ marginBottom: 18 }}>
@@ -124,6 +184,11 @@ export const MyWorkView = () => {
               <div style={{ flex: 1 }}>
                 <div className="cr-task-name">
                   {t.leadId?.fullName || "Unknown Client"}
+                  {t.adminReview?.status === "rejected" && (
+                    <span style={{ marginLeft: 8, fontSize: 10, color: "#b03a2e", fontWeight: 700 }}>
+                      ⚠ REVISION
+                    </span>
+                  )}
                 </div>
                 <div className="cr-task-meta">
                   {t.concern || "Report"} • Due{" "}

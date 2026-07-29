@@ -19,6 +19,31 @@ export const TaskModal = ({ task, accent, onClose, onGenerate }) => (
         </div>
       </div>
       <div className="cr-modal-body">
+        {task.adminReview?.status === "rejected" && (
+          <div
+            style={{
+              background: "rgba(176,58,46,0.08)",
+              border: "1px solid rgba(176,58,46,0.3)",
+              borderRadius: 8,
+              padding: "10px 14px",
+              margin: "0 20px 16px",
+            }}
+          >
+            <div
+              style={{
+                fontWeight: 700,
+                fontSize: 12,
+                color: "#b03a2e",
+                marginBottom: 4,
+              }}
+            >
+              ⚠ Revisions requested by admin
+            </div>
+            <div style={{ fontSize: 12, color: "var(--text-dim)" }}>
+              {task.adminReview.reviewNote || "No specific note was provided."}
+            </div>
+          </div>
+        )}
         <div className="cr-modal-row">
           <div>
             <div className="cr-modal-field-label">Status</div>
@@ -106,7 +131,9 @@ export const TaskModal = ({ task, accent, onClose, onGenerate }) => (
               className="cr-modal-btn primary"
               onClick={() => onGenerate(task)}
             >
-              Generate Report
+              {task.adminReview?.status === "rejected"
+                ? "Fix Now"
+                : "Generate Report"}
             </div>
           )}
 

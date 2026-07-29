@@ -103,7 +103,9 @@ export default function Dashboard() {
                 />
 
                 <div className="cr-content">
-                  {view === "work" && <MyWorkView />}
+                  {view === "work" && (
+                    <MyWorkView onViewTasks={() => setView("tasks")} />
+                  )}
 
                   {view === "inbox" && (
                     <InboxView

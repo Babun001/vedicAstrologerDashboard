@@ -1,236 +1,81 @@
 "use client";
 
-import { useState } from "react";
-import { Modal } from "../UI/modal";
-import { Button } from "../UI/button";
-import { Badge } from "../UI/badge";
-import {
-  getReportStatusColor,
-  getPlanColor,
-  formatDateTime,
-} from "../lib/utils";
-import { generateReportPDF } from "../lib/pdf-generator";
-import { mockCustomers } from "../lib/mock-data";
-import {
-  Download,
-  Send,
-  FileText,
-  User,
-  Calendar,
-  Sparkles,
-} from "lucide-react";
+import { Download, FileText, Sparkles, X, CheckCircle2 } from "lucide-react";
 
-export function ReportPreviewModal({
-  open,
-  onClose,
-  report,
-  customer,
-  onSent,
-}) {
-  const [sending, setSending] = useState(false);
-  const [generating, setGenerating] = useState(false);
-  const [sent, setSent] = useState(false);
-
-  if (!report) return null;
-
-  // const customer = mockCustomers.find(c => c._id === report.userId) ?? null;
-
-  const handleDownloadPDF = async () => {
-    setGenerating(true);
-    try {
-      // await generateReportPDF(report, customer);
-      if (!report) return;
-
-      const customer = {
-        name: report.userName,
-        email: report.userEmail,
-        fullName: report.userName,
-      };
-
-      await generateReportPDF(report, customer);
-    } finally {
-      setGenerating(false);
-    }
-  };
-
-  const handleSendToClient = async () => {
-    setSending(true);
-    await new Promise((r) => setTimeout(r, 1800));
-    setSending(false);
-    setSent(true);
-    onSent?.(report.id);
-    setTimeout(() => {
-      setSent(false);
-      onClose();
-    }, 1500);
-  };
-
-  const templateLabels = {
-    free: "Free Report",
-    modern: "Modern Report",
-    premium: "Premium Report",
-  };
+export function ReportPreviewModal({ open, onClose, report }) {
+  if (!open || !report) return null;
 
   return (
-    <Modal open={open} onClose={onClose} title="Report Preview" size="xl">
-      {/*
-        Modal shell: flex column, overflow hidden so header/footer never scroll away.
-        max-h is controlled by the Modal component itself (size="xl").
-        If your Modal doesn't constrain height, add:  className="flex flex-col max-h-[640px] overflow-hidden"
-        to the Modal's inner panel.
-      */}
+    <div className="cr-modal-backdrop" onClick={onClose}>
+      <div className="cr-modal" onClick={(e) => e.stopPropagation()}>
+        <div className="cr-modal-top" />
 
-      {/* ── HEADER ─────────────────────────────────────────────── */}
-      {/* flex-shrink-0 keeps this pinned; never scrolls */}
-      <div className="flex-shrink-0 flex flex-wrap items-center justify-between gap-3 mb-0 p-4 border-b border-white/10">
-        <div className="flex items-center gap-3 flex-wrap">
-          <Badge className={getReportStatusColor(report.status)}>
-            {report.status.charAt(0).toUpperCase() + report.status.slice(1)}
-          </Badge>
-          <Badge className={getPlanColor(report.template)}>
-            <Sparkles size={9} className="mr-1" />
-            {templateLabels[report.template]}
-          </Badge>
-        </div>
-        <div className="flex items-center gap-2 text-xs text-white/40">
-          <Calendar size={12} />
-          <span>{formatDateTime(report.createdAt)}</span>
-        </div>
-      </div>
-
-      {/* ── SCROLLABLE BODY ─────────────────────────────────────── */}
-      {/*
-        flex-1 lets this grow to fill available height.
-        overflow-y-auto enables scrolling only here — header & footer stay fixed.
-        px-6 py-5: 24px horizontal, 20px vertical padding — comfortable and consistent.
-        scrollbar-thin + custom thumb color for a polished feel.
-      */}
-      <div
-        className="
-          flex-1 overflow-y-auto
-          px-6 pt-5 pb-6
-          scrollbar-thin scrollbar-track-transparent scrollbar-thumb-white/10
-          hover:scrollbar-thumb-white/20
-        "
-      >
-        {/* Client info strip */}
-        {customer && (
-          <div className="flex items-center gap-3 bg-cosmos-500/10 border border-cosmos-500/20 rounded-xl px-4 py-3 mb-5">
-            <div className="w-9 h-9 rounded-full bg-gradient-to-br from-cosmos-500 to-gold-500 flex items-center justify-center shrink-0">
-              <User size={13} className="text-white" />
-            </div>
-            <div>
-              <p className="text-sm font-medium text-white leading-tight">
-                {customer.name}
-              </p>
-              <p className="text-xs text-white/50 leading-tight mt-0.5">
-                {customer.email}
-              </p>
-            </div>
-            <div className="ml-auto text-right hidden sm:block">
-              <p className="text-xs text-white/40">DOB: {customer.dob}</p>
-              <p className="text-xs text-white/40 mt-0.5">
-                {customer.pobCity}, {customer.pobCountry}
-              </p>
+        <div className="cr-modal-head">
+          <div>
+            <div className="cr-modal-client">{report.title || "Report Preview"}</div>
+            <div className="cr-modal-service">
+              <Sparkles size={11} style={{ marginRight: 4, verticalAlign: -1 }} />
+              Submitted for admin review
             </div>
           </div>
-        )}
-
-        {/* Report title */}
-        <h2 className="text-xl font-display font-bold text-white mb-4 leading-snug">
-          {report.title}
-        </h2>
-
-        {/*
-          Report body — independent inner scroll zone.
-          max-h-[220px] keeps the content box from overtaking the modal.
-          The outer modal body still scrolls if admin notes + other elements overflow.
-          Inner scrollbar is thinner (3px equivalent via scrollbar-thin).
-          p-5: 20px all sides — comfortable reading margins inside the box.
-        */}
-        <div
-          className="
-            bg-ink-950/60 border border-white/8 rounded-xl p-5 mb-5
-            max-h-[220px] overflow-y-auto
-            scrollbar-thin scrollbar-track-transparent scrollbar-thumb-white/8
-            hover:scrollbar-thumb-white/15
-            text-white/80 text-sm font-body leading-relaxed
-            [&_h2]:text-white [&_h2]:font-display [&_h2]:text-base [&_h2]:font-semibold
-            [&_h2]:mb-2 [&_h2]:mt-4 [&_h2]:first:mt-0
-            [&_h2]:border-b [&_h2]:border-white/10 [&_h2]:pb-1.5
-            [&_h3]:text-cosmos-300 [&_h3]:font-semibold [&_h3]:text-sm [&_h3]:mb-1.5 [&_h3]:mt-3
-            [&_p]:mb-3 [&_p]:text-white/75 [&_p]:last:mb-0
-            [&_ul]:list-disc [&_ul]:pl-5 [&_ul]:mb-3 [&_ul]:space-y-1
-            [&_li]:text-white/70
-            [&_strong]:text-gold-400 [&_strong]:font-semibold
-            [&_em]:text-cosmos-300 [&_em]:italic
-          "
-          dangerouslySetInnerHTML={{ __html: report.content }}
-        />
-
-        {/* Admin notes */}
-        {report.adminNotes && (
-          <div className="flex gap-3 bg-gold-500/8 border border-gold-500/20 rounded-xl px-4 py-3">
-            <FileText size={14} className="text-gold-400 shrink-0 mt-0.5" />
-            <div>
-              <p className="text-xs text-gold-400 font-medium mb-1">
-                Admin Notes
-              </p>
-              <p className="text-xs text-white/60 leading-relaxed">
-                {report.adminNotes}
-              </p>
-            </div>
+          <div className="cr-modal-close" onClick={onClose}>
+            <X size={16} />
           </div>
-        )}
-      </div>
+        </div>
 
-      {/* ── FOOTER ──────────────────────────────────────────────── */}
-      {/*
-        flex-shrink-0 pins this to the bottom — always visible.
-        pt-4 pb-1: 16px top gap from the border, 4px extra bottom breathing room.
-        The Modal component likely adds its own bottom padding; adjust pb if needed.
-      */}
-      <div className="flex-shrink-0 flex items-center justify-between gap-3 p-5 mt-1 border-t border-white/10 flex-wrap">
-        <Button variant="secondary" onClick={onClose}>
-          Close
-        </Button>
+        <div className="cr-modal-body">
+          <div
+            style={{
+              background: "var(--surface-2, #f7f2e6)",
+              border: "1px solid var(--border, #e8d5a3)",
+              borderRadius: 10,
+              padding: 18,
+              marginBottom: 16,
+              maxHeight: 250,
+              overflowY: "auto",
+              fontSize: 13,
+              lineHeight: 1.6,
+              color: "var(--text)",
+            }}
+            dangerouslySetInnerHTML={{ __html: report.content }}
+          />
 
-        <div className="flex items-center gap-2">
-          <Button
-            variant="secondary"
-            onClick={handleDownloadPDF}
-            loading={generating}
-            disabled={generating}
+          <div
+            style={{
+              display: "flex",
+              alignItems: "flex-start",
+              gap: 10,
+              background: "rgba(46,125,50,0.08)",
+              border: "1px solid rgba(46,125,50,0.25)",
+              borderRadius: 8,
+              padding: "10px 14px",
+            }}
           >
-            <Download size={14} />
-            Download PDF
-          </Button>
+            <CheckCircle2 size={15} color="var(--success)" style={{ marginTop: 1, flexShrink: 0 }} />
+            <div style={{ fontSize: 12, color: "var(--text-dim)" }}>
+              This report has been generated and sent to the admin for review.
+              You'll be notified here if any revisions are requested.
+            </div>
+          </div>
+        </div>
 
-          {report.status !== "sent" && (
-            <Button
-              variant="gold"
-              onClick={handleSendToClient}
-              loading={sending}
-              disabled={sending || sent}
+        <div className="cr-modal-actions">
+          {report.cdnUrl && (
+            <a
+              href={report.cdnUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="cr-btn secondary"
             >
-              {sent ? (
-                <>✓ Sent!</>
-              ) : (
-                <>
-                  <Send size={14} />
-                  Send to Client
-                </>
-              )}
-            </Button>
+              <Download size={14} /> Download PDF
+            </a>
           )}
 
-          {report.status === "sent" && (
-            <span className="text-xs text-jade-400 flex items-center gap-1">
-              ✓ Sent on {report.sentAt ? formatDateTime(report.sentAt) : "—"}
-            </span>
-          )}
+          <div className="cr-modal-btn ghost" onClick={onClose}>
+            Close
+          </div>
         </div>
       </div>
-    </Modal>
+    </div>
   );
 }

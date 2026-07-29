@@ -279,6 +279,8 @@ export default function CreateReport({ report }) {
   const [created, setCreated] = useState(false);
   const [submitError, setSubmitError] = useState("");
 
+  const isRevision = report?.adminReview?.status === "rejected";
+
   const {
     register,
     control,
@@ -287,7 +289,12 @@ export default function CreateReport({ report }) {
     setValue,
     formState: { errors, isSubmitting },
   } = useForm({
-    defaultValues: { content: "", template: "free", title: "", adminNotes: "" },
+    defaultValues: {
+      content: report?.content || "",
+      template: "free",
+      title: "",
+      adminNotes: "",
+    },
   });
 
   const [selectedTemplate, content] = watch(["template", "content"]);
@@ -317,7 +324,9 @@ export default function CreateReport({ report }) {
     setSubmitError("");
 
     if (!report?.reportId) {
-      setSubmitError("No report selected — go back to the task board and open a task first.");
+      setSubmitError(
+        "No report selected — go back to the task board and open a task first.",
+      );
       return;
     }
 
@@ -335,6 +344,7 @@ export default function CreateReport({ report }) {
         title: data.title,
         content: finalContent,
         cdnUrl: response.data?.data?.report?.cdnUrl,
+        status: response.data?.data?.report?.status,
       });
       setCreated(true);
     } catch (error) {
@@ -350,10 +360,40 @@ export default function CreateReport({ report }) {
     <div>
       <div className="cr-page-head">
         <div className="cr-page-eyebrow">
-          <Sparkles size={11} /> New Report
+          <Sparkles size={11} /> {isRevision ? "Revision" : "New Report"}
         </div>
-        <h1 className="cr-page-title">Create Report</h1>
+        <h1 className="cr-page-title">
+          {isRevision ? "Fix Report" : "Create Report"}
+        </h1>
       </div>
+
+      {isRevision && (
+        <div
+          className="cr-error-box"
+          style={{
+            marginBottom: 18,
+            background: "rgba(176,58,46,0.06)",
+            borderColor: "rgba(176,58,46,0.3)",
+          }}
+        >
+          <div className="cr-error-row">
+            <AlertCircle
+              size={16}
+              color="#b03a2e"
+              style={{ marginTop: 2, flexShrink: 0 }}
+            />
+            <div>
+              <p className="cr-error-title" style={{ color: "#b03a2e" }}>
+                Admin requested revisions
+              </p>
+              <p className="cr-error-msg">
+                {report.adminReview.reviewNote ||
+                  "No specific note was provided."}
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
 
       <form
         onSubmit={handleSubmit(onSubmit)}
@@ -455,7 +495,11 @@ export default function CreateReport({ report }) {
         {submitError && (
           <div className="cr-error-box">
             <div className="cr-error-row">
-              <AlertCircle size={16} color="var(--danger)" style={{ marginTop: 2, flexShrink: 0 }} />
+              <AlertCircle
+                size={16}
+                color="var(--danger)"
+                style={{ marginTop: 2, flexShrink: 0 }}
+              />
               <p className="cr-error-msg">{submitError}</p>
             </div>
           </div>
@@ -497,7 +541,11 @@ export default function CreateReport({ report }) {
               disabled={isSubmitting}
             >
               <FileText size={15} />{" "}
-              {isSubmitting ? "Generating…" : created ? "Regenerate Report" : "Generate Report"}
+              {isSubmitting
+                ? "Generating…"
+                : created
+                  ? "Regenerate Report"
+                  : "Generate Report"}
             </button>
           </div>
         </div>
