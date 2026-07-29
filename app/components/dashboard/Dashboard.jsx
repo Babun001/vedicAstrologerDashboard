@@ -13,6 +13,7 @@ import { TasksView } from "../tasks/TasksView";
 import axiosInstanceClient from "../services/client.services";
 import { useEffect } from "react";
 import { DashboardSkeleton } from "../common/Skeleton";
+import ProfileView from "../profile/ProfileView";
 import { NotificationProvider } from "../context/NotificationContext";
 
 export default function Dashboard() {
@@ -79,6 +80,7 @@ export default function Dashboard() {
               mobileNavOpen={mobileNavOpen}
               onCloseMobile={() => setMobileNavOpen(false)}
               onSignOut={handleLogout}
+              astrologer={astrologer}
             />
 
             <main className="cr-main">
@@ -102,6 +104,7 @@ export default function Dashboard() {
                     view={view}
                     astrologer={astrologer}
                     onMenuClick={() => setMobileNavOpen(true)}
+                    onProfileClick={() => setView("profile")}
                   />
 
                   <div className="cr-content">
@@ -127,6 +130,13 @@ export default function Dashboard() {
 
                     {view === "create-report" && (
                       <CreateReport report={selectedReportId} />
+                    )}
+
+                    {view === "profile" && (
+                      <ProfileView
+                        astrologer={astrologer}
+                        onUpdate={setAstrologer}
+                      />
                     )}
                   </div>
                 </>

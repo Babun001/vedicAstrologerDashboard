@@ -1,16 +1,13 @@
 "use client";
-import { Sparkles, Inbox, ClipboardList, X } from "lucide-react";
+import { Sparkles, Inbox, ClipboardList, X, Award,FilePlus } from "lucide-react";
 import { StarField } from "../common/StarField";
 import { LotusWatermark } from "../common/LotusWatermark";
-import { OrbitRing } from "../common/OrbitRing";
 
 const nav = [
   { id: "work", label: "My Work", icon: Sparkles },
   { id: "inbox", label: "Unified Inbox", icon: Inbox, badge: 4 },
   { id: "tasks", label: "Report Tasks", icon: ClipboardList },
-  { id: "create-report", label: "Create Report", icon: ClipboardList },
-  // { id: "tasks", label: "Report Tasks", icon: ClipboardList },
-
+  { id: "create-report", label: "Create Report", icon: FilePlus },
 ];
 
 export const Sidebar = ({
@@ -19,6 +16,7 @@ export const Sidebar = ({
   mobileNavOpen,
   onCloseMobile,
   onSignOut,
+  astrologer,
 }) => (
   <aside className={`cr-sidebar ${mobileNavOpen ? "open" : ""}`}>
     <StarField />
@@ -55,13 +53,15 @@ export const Sidebar = ({
     </nav>
 
     <div className="cr-sidebar-foot">
-      {/* <div className="cr-cap-card">
-        <OrbitRing value={6} max={10} size={40} stroke={4} />
-        <div>
-          <div className="cr-cap-label">Daily cap</div>
-          <div className="cr-cap-value">6 / 10</div>
+      <div className="cr-cap-card">
+        <div className="cr-cap-icon">
+          <Award size={18} />
         </div>
-      </div> */}
+        <div>
+          <div className="cr-cap-label">Reports delivered</div>
+          <div className="cr-cap-value">{astrologer?.totalReportsDelivered ?? 0}</div>
+        </div>
+      </div>
       <div className="cr-logout" onClick={onSignOut}>
         Sign out
       </div>

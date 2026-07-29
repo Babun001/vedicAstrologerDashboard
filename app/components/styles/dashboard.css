@@ -1,3 +1,15 @@
+.cr-cap-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: rgba(224, 172, 70, 0.12);
+  border: 1px solid rgba(224, 172, 70, 0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--gold, #c9a227);
+  flex-shrink: 0;
+}
 /* Cosmic Remedies dashboard — consolidated styles (root palette, sidebar, topbar, login, inbox, tasks, modal) */
 .cr-notif-head {
   display: flex;

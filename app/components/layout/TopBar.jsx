@@ -7,18 +7,16 @@ const titles = {
   work: ["My Work", "Today's report tasks and open conversations"],
   inbox: ["Unified Inbox", "Instagram and Facebook messages, one thread"],
   tasks: ["Report Tasks", "Birth-chart PDF pipeline — drag a card to move it"],
-  "create-report": [
-    "Create Report",
-    "Generate a new astrology report"
-  ],
+  "create-report": ["Create Report", "Generate a new astrology report"],
+  profile: ["My Profile", "Manage your astrologer account"],
 };
 
-const getName = (name) =>{
+const getName = (name) => {
   if (!name) return "";
   const initials = name.split(" ").map(w => w[0]).join("").toUpperCase();
   return initials;
 }
-export const TopBar = ({ view,astrologer, onMenuClick }) => (
+export const TopBar = ({ view, astrologer, onMenuClick, onProfileClick }) => (
   <div className="cr-topbar">
     <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
       <div className="cr-hamburger" onClick={onMenuClick}>
@@ -35,7 +33,14 @@ export const TopBar = ({ view,astrologer, onMenuClick }) => (
         Search clients, threads, tasks
       </div>
       <NotificationBell />
-      <div className="cr-avatar">{getName(astrologer?.name)}</div>
+      <div
+        className="cr-avatar"
+        onClick={onProfileClick}
+        style={{ cursor: "pointer" }}
+        title="View profile"
+      >
+        {getName(astrologer?.name)}
+      </div>
     </div>
   </div>
 );

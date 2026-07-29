@@ -7,6 +7,7 @@ import { Eyebrow } from "../common/Eyebrow";
 import axiosInstanceClient from "../services/client.services";
 import { STATUS_FROM_BACKEND } from "../data/statusMap";
 import { MyWorkSkeleton } from "../common/Skeleton";
+import { useNotifications } from "../context/NotificationContext";
 
 const Stat = ({ label, value, sub, tone }) => (
   <div className="cr-card cr-stat">
@@ -30,10 +31,12 @@ export const MyWorkView = ({ onViewTasks }) => {
     delivered: 0,
     due: 0,
     capacity: { used: 0, limit: 0 },
+    deliveredToday: 0,
     rating: { avg: 0, total: 0 },
   });
 
   const [tasks, setTasks] = useState([]);
+  const { addNotification } = useNotifications();
 
   const fetchWork = async () => {
     try {
@@ -44,7 +47,22 @@ export const MyWorkView = ({ onViewTasks }) => {
         axiosInstanceClient.get("/astrologer/reports"),
       ]);
 
-      setWorkStats(workResponse.data.data);
+      const newStats = workResponse.data.data;
+      setWorkStats(newStats);
+
+      const activeToday = newStats.capacity?.used ?? 0;
+      if (
+        prevActiveRef.current !== null &&
+        prevActiveRef.current > 0 &&
+        activeToday === 0
+      ) {
+        addNotification(
+          "milestone",
+          "All caught up!",
+          "You've completed all of today's assigned tasks. 🎉",
+        );
+      }
+      prevActiveRef.current = activeToday;
 
       const board = reportsResponse.data.data.board;
       const flattenedReports = [
@@ -89,7 +107,9 @@ export const MyWorkView = ({ onViewTasks }) => {
     );
   }
 
-  const rejectedTasks = tasks.filter((t) => t.adminReview?.status === "rejected");
+  const rejectedTasks = tasks.filter(
+    (t) => t.adminReview?.status === "rejected",
+  );
 
   return (
     <>
@@ -105,27 +125,47 @@ export const MyWorkView = ({ onViewTasks }) => {
             border: "1px solid rgba(176,58,46,0.3)",
           }}
         >
-          <div style={{ fontWeight: 700, fontSize: 13, color: "#b03a2e", marginBottom: 8 }}>
-            ⚠ {rejectedTasks.length} report{rejectedTasks.length === 1 ? "" : "s"} sent back for revision
+          <div
+            style={{
+              fontWeight: 700,
+              fontSize: 13,
+              color: "#b03a2e",
+              marginBottom: 8,
+            }}
+          >
+            ⚠ {rejectedTasks.length} report
+            {rejectedTasks.length === 1 ? "" : "s"} sent back for revision
           </div>
           {rejectedTasks.map((t) => (
             <div
               key={t._id}
               style={{
-                fontSize: 12, color: "var(--text-dim)", marginBottom: 6,
-                display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10,
+                fontSize: 12,
+                color: "var(--text-dim)",
+                marginBottom: 6,
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                gap: 10,
               }}
             >
               <span>
                 <strong>{t.leadId?.fullName || "Unknown Client"}</strong>
-                {t.adminReview?.reviewNote ? ` — ${t.adminReview.reviewNote}` : ""}
+                {t.adminReview?.reviewNote
+                  ? ` — ${t.adminReview.reviewNote}`
+                  : ""}
               </span>
               <button
                 onClick={onViewTasks}
                 style={{
-                  fontSize: 11, color: "#b03a2e", background: "none",
-                  border: "1px solid rgba(176,58,46,0.4)", borderRadius: 6,
-                  padding: "3px 10px", cursor: "pointer", whiteSpace: "nowrap",
+                  fontSize: 11,
+                  color: "#b03a2e",
+                  background: "none",
+                  border: "1px solid rgba(176,58,46,0.4)",
+                  borderRadius: 6,
+                  padding: "3px 10px",
+                  cursor: "pointer",
+                  whiteSpace: "nowrap",
                 }}
               >
                 Review →
@@ -144,8 +184,9 @@ export const MyWorkView = ({ onViewTasks }) => {
 
         <Stat
           label="Reports delivered"
-          value={workStats.delivered}
-          sub="Completed this week"
+          value={`${workStats.deliveredToday ?? 0} / ${workStats.capacity?.limit ?? 0}`}
+          sub="Delivered today"
+          tone="success"
         />
 
         <Stat
@@ -163,8 +204,16 @@ export const MyWorkView = ({ onViewTasks }) => {
 
         <Stat
           label="Your rating"
-          value={workStats.rating?.total > 0 ? `${workStats.rating.avg.toFixed(1)} ★` : "—"}
-          sub={workStats.rating?.total > 0 ? `${workStats.rating.total} review${workStats.rating.total === 1 ? "" : "s"}` : "No ratings yet"}
+          value={
+            workStats.rating?.total > 0
+              ? `${workStats.rating.avg.toFixed(1)} ★`
+              : "—"
+          }
+          sub={
+            workStats.rating?.total > 0
+              ? `${workStats.rating.total} review${workStats.rating.total === 1 ? "" : "s"}`
+              : "No ratings yet"
+          }
         />
       </div>
 
@@ -185,7 +234,14 @@ export const MyWorkView = ({ onViewTasks }) => {
                 <div className="cr-task-name">
                   {t.leadId?.fullName || "Unknown Client"}
                   {t.adminReview?.status === "rejected" && (
-                    <span style={{ marginLeft: 8, fontSize: 10, color: "#b03a2e", fontWeight: 700 }}>
+                    <span
+                      style={{
+                        marginLeft: 8,
+                        fontSize: 10,
+                        color: "#b03a2e",
+                        fontWeight: 700,
+                      }}
+                    >
                       ⚠ REVISION
                     </span>
                   )}

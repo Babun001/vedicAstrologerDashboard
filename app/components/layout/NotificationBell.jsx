@@ -1,11 +1,20 @@
 "use client";
 import { useState } from "react";
-import { Bell, Clock, UserPlus, RotateCcw } from "lucide-react";
+import {
+  Bell,
+  Clock,
+  UserPlus,
+  RotateCcw,
+  CheckCircle2,
+  PartyPopper,
+} from "lucide-react";
 import { useNotifications } from "../context/NotificationContext";
 
 const ICONS = {
   assignment: UserPlus,
   revision: RotateCcw,
+  delivered: CheckCircle2,
+  milestone: PartyPopper,
 };
 
 const timeAgo = (iso) => {
@@ -20,7 +29,8 @@ const timeAgo = (iso) => {
 
 export const NotificationBell = () => {
   const [open, setOpen] = useState(false);
-  const { notifications, unreadCount, markAsRead, markAllAsRead } = useNotifications();
+  const { notifications, unreadCount, markAsRead, markAllAsRead } =
+    useNotifications();
 
   return (
     <div className="cr-notif-wrap">
@@ -28,10 +38,13 @@ export const NotificationBell = () => {
         className="cr-notif-btn"
         onClick={() => setOpen((o) => !o)}
         aria-label="Notifications"
+        title="Notifications"
       >
         <Bell size={16} />
         {unreadCount > 0 && (
-          <span className="cr-notif-dot">{unreadCount > 9 ? "9+" : unreadCount}</span>
+          <span className="cr-notif-dot">
+            {unreadCount > 9 ? "9+" : unreadCount}
+          </span>
         )}
       </button>
       {open && (

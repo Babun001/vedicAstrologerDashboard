@@ -29,12 +29,9 @@ const loadStored = () => {
 
 const saveStored = (list) => {
   try {
-    localStorage.setItem(
-      STORAGE_KEY,
-      JSON.stringify(list.slice(0, MAX_STORED)),
-    );
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(list.slice(0, MAX_STORED)));
   } catch {
-    // storage full/unavailable — non-fatal, notifications just won't persist
+    // storage full/unavailable — non-fatal
   }
 };
 
@@ -93,20 +90,17 @@ export function NotificationProvider({ children }) {
       try {
         report = JSON.parse(event.data);
       } catch {
-        return; // malformed payload — skip rather than crash
+        return;
       }
 
-      const clientName =
-        report.leadId?.fullName || report.concern || "a client";
+      const clientName = report.leadId?.fullName || report.concern || "a client";
 
       if (report.adminReview?.status === "rejected") {
         addNotification(
           "revision",
           "Revision requested",
           `Admin sent back the report for ${clientName}${
-            report.adminReview.reviewNote
-              ? `: "${report.adminReview.reviewNote}"`
-              : ""
+            report.adminReview.reviewNote ? `: "${report.adminReview.reviewNote}"` : ""
           }`,
         );
       } else {
@@ -118,6 +112,23 @@ export function NotificationProvider({ children }) {
       }
     });
 
+    es.addEventListener("report-delivered", (event) => {
+      let report = {};
+      try {
+        report = JSON.parse(event.data);
+      } catch {
+        return;
+      }
+
+      const clientName = report.leadId?.fullName || report.concern || "a client";
+
+      addNotification(
+        "delivered",
+        "Report delivered",
+        `Your report for ${clientName} was approved and delivered to the client.`,
+      );
+    });
+
     return () => es.close();
   }, [addNotification]);
 
@@ -125,7 +136,7 @@ export function NotificationProvider({ children }) {
 
   return (
     <NotificationContext.Provider
-      value={{ notifications, unreadCount, markAsRead, markAllAsRead }}
+      value={{ notifications, unreadCount, markAsRead, markAllAsRead, addNotification }}
     >
       {children}
     </NotificationContext.Provider>
