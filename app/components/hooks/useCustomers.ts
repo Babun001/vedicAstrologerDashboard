@@ -1,7 +1,12 @@
-// hooks/useCustomers.ts
 import { useState, useEffect } from "react";
 import axiosInstanceClient from "../services/client.services";
 import type { Customer } from "../Types/types";
+
+interface LeadsResponse {
+  data: {
+    leads: Customer[];
+  };
+}
 
 export function useCustomers() {
   const [customers, setCustomers] = useState<Customer[]>([]);
@@ -9,8 +14,9 @@ export function useCustomers() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    axiosInstanceClient.get("/leads")
-      .then(res => {
+    axiosInstanceClient
+      .get<LeadsResponse>("/leads")
+      .then((res) => {
         setCustomers(res.data.data.leads ?? []);
       })
       .catch(() => setError("Failed to load customers"))
