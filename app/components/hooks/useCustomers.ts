@@ -14,13 +14,18 @@ export function useCustomers() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    axiosInstanceClient
-      .get<LeadsResponse>("/leads")
-      .then((res) => {
+    const fetchCustomers = async () => {
+      try {
+        const res = await axiosInstanceClient.get<LeadsResponse>("/leads");
         setCustomers(res.data.data.leads ?? []);
-      })
-      .catch(() => setError("Failed to load customers"))
-      .finally(() => setLoading(false));
+      } catch {
+        setError("Failed to load customers");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchCustomers();
   }, []);
 
   return { customers, loading, error };
