@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { ChevronRight } from "lucide-react";
 import { StatusPill } from "../common/StatusPill";
 import { Eyebrow } from "../common/Eyebrow";
@@ -37,6 +37,7 @@ export const MyWorkView = ({ onViewTasks }) => {
 
   const [tasks, setTasks] = useState([]);
   const { addNotification } = useNotifications();
+  const prevActiveRef = useRef(null);
 
   const fetchWork = async () => {
     try {
