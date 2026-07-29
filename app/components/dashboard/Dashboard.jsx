@@ -13,6 +13,7 @@ import { TasksView } from "../tasks/TasksView";
 import axiosInstanceClient from "../services/client.services";
 import { useEffect } from "react";
 import { DashboardSkeleton } from "../common/Skeleton";
+import { NotificationProvider } from "../context/NotificationContext";
 
 export default function Dashboard() {
   const [authed, setAuthed] = useState(false);
@@ -63,74 +64,76 @@ export default function Dashboard() {
           <RegisterView onSwitchToLogin={() => setAuthView("login")} />
         )
       ) : (
-        <div className="cr-shell">
-          {mobileNavOpen && (
-            <div
-              className="cr-mobile-backdrop"
-              onClick={() => setMobileNavOpen(false)}
-            />
-          )}
-
-          <Sidebar
-            view={view}
-            setView={setView}
-            mobileNavOpen={mobileNavOpen}
-            onCloseMobile={() => setMobileNavOpen(false)}
-            onSignOut={handleLogout}
-          />
-
-          <main className="cr-main">
-            <LotusWatermark
-              className="cr-content-mandala"
-              size={520}
-              opacity={0.08}
-            />
-
-            <LotusWatermark
-              className="cr-content-mandala-2"
-              size={280}
-              opacity={0.07}
-            />
-
-            {profileLoading ? (
-              <DashboardSkeleton />
-            ) : (
-              <>
-                <TopBar
-                  view={view}
-                  astrologer={astrologer}
-                  onMenuClick={() => setMobileNavOpen(true)}
-                />
-
-                <div className="cr-content">
-                  {view === "work" && (
-                    <MyWorkView onViewTasks={() => setView("tasks")} />
-                  )}
-
-                  {view === "inbox" && (
-                    <InboxView
-                      activeConvo={activeConvo}
-                      setActiveConvo={setActiveConvo}
-                    />
-                  )}
-
-                  {view === "tasks" && (
-                    <TasksView
-                      onGenerateReport={(report) => {
-                        setSelectedReportId(report);
-                        setView("create-report");
-                      }}
-                    />
-                  )}
-
-                  {view === "create-report" && (
-                    <CreateReport report={selectedReportId} />
-                  )}
-                </div>
-              </>
+        <NotificationProvider>
+          <div className="cr-shell">
+            {mobileNavOpen && (
+              <div
+                className="cr-mobile-backdrop"
+                onClick={() => setMobileNavOpen(false)}
+              />
             )}
-          </main>
-        </div>
+
+            <Sidebar
+              view={view}
+              setView={setView}
+              mobileNavOpen={mobileNavOpen}
+              onCloseMobile={() => setMobileNavOpen(false)}
+              onSignOut={handleLogout}
+            />
+
+            <main className="cr-main">
+              <LotusWatermark
+                className="cr-content-mandala"
+                size={520}
+                opacity={0.08}
+              />
+
+              <LotusWatermark
+                className="cr-content-mandala-2"
+                size={280}
+                opacity={0.07}
+              />
+
+              {profileLoading ? (
+                <DashboardSkeleton />
+              ) : (
+                <>
+                  <TopBar
+                    view={view}
+                    astrologer={astrologer}
+                    onMenuClick={() => setMobileNavOpen(true)}
+                  />
+
+                  <div className="cr-content">
+                    {view === "work" && (
+                      <MyWorkView onViewTasks={() => setView("tasks")} />
+                    )}
+
+                    {view === "inbox" && (
+                      <InboxView
+                        activeConvo={activeConvo}
+                        setActiveConvo={setActiveConvo}
+                      />
+                    )}
+
+                    {view === "tasks" && (
+                      <TasksView
+                        onGenerateReport={(report) => {
+                          setSelectedReportId(report);
+                          setView("create-report");
+                        }}
+                      />
+                    )}
+
+                    {view === "create-report" && (
+                      <CreateReport report={selectedReportId} />
+                    )}
+                  </div>
+                </>
+              )}
+            </main>
+          </div>
+        </NotificationProvider>
       )}
     </div>
   );

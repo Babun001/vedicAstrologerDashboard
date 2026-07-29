@@ -55,13 +55,13 @@ export const Sidebar = ({
     </nav>
 
     <div className="cr-sidebar-foot">
-      <div className="cr-cap-card">
+      {/* <div className="cr-cap-card">
         <OrbitRing value={6} max={10} size={40} stroke={4} />
         <div>
           <div className="cr-cap-label">Daily cap</div>
           <div className="cr-cap-value">6 / 10</div>
         </div>
-      </div>
+      </div> */}
       <div className="cr-logout" onClick={onSignOut}>
         Sign out
       </div>
