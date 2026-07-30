@@ -11,6 +11,7 @@ import {
   FileText,
   CheckCircle2,
   AlertCircle,
+  ShieldCheck,
 } from "lucide-react";
 import { LotusWatermark } from "../common/LotusWatermark";
 import axiosInstanceClient from "../services/client.services";
@@ -45,7 +46,7 @@ const LANGUAGE_OPTIONS = [
 
 const RegisterForm = ({ onSwitchToLogin }) => {
   const toast = useToast();
-  const [pageLoading] = useState(false); // set true + wire useEffect if this page ever needs an initial fetch
+  const [pageLoading] = useState(false);
   const [form, setForm] = useState({
     name: "",
     email: "",
@@ -59,7 +60,13 @@ const RegisterForm = ({ onSwitchToLogin }) => {
   });
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
-  const [submitted, setSubmitted] = useState(false);
+
+  // "form" -> "otp" -> "submitted"
+  const [stage, setStage] = useState("form");
+  const [otp, setOtp] = useState("");
+  const [otpLoading, setOtpLoading] = useState(false);
+  const [otpError, setOtpError] = useState("");
+  const [resending, setResending] = useState(false);
 
   const update = (field) => (e) =>
     setForm((prev) => ({ ...prev, [field]: e.target.value }));
@@ -78,6 +85,19 @@ const RegisterForm = ({ onSwitchToLogin }) => {
     return "";
   };
 
+  const sendOtp = async () => {
+    await axiosInstanceClient.post("/astrologer/register/send-otp", {
+      name: form.name.trim(),
+      email: form.email.trim(),
+      phone: form.phone.trim(),
+      password: form.password,
+      experience: Number(form.experience) || 0,
+      expertise: form.expertise,
+      languages: form.languages,
+      bio: form.bio.trim(),
+    });
+  };
+
   const handleRegister = async () => {
     const validationError = validate();
     if (validationError) {
@@ -90,19 +110,10 @@ const RegisterForm = ({ onSwitchToLogin }) => {
       setLoading(true);
       setErrorMsg("");
 
-      await axiosInstanceClient.post("/astrologer/register", {
-        name: form.name.trim(),
-        email: form.email.trim(),
-        phone: form.phone.trim(),
-        password: form.password,
-        experience: Number(form.experience) || 0,
-        expertise: form.expertise,
-        languages: form.languages,
-        bio: form.bio.trim(),
-      });
+      await sendOtp();
 
-      toast.success("Application submitted successfully!");
-      setSubmitted(true);
+      toast.success(`Verification code sent to ${form.email.trim()}`);
+      setStage("otp");
     } catch (error) {
       console.error(
         "Astrologer registration failed:",
@@ -118,9 +129,56 @@ const RegisterForm = ({ onSwitchToLogin }) => {
     }
   };
 
+  const handleVerifyOtp = async () => {
+    if (!otp.trim()) {
+      setOtpError("Enter the code we sent you.");
+      return;
+    }
+
+    try {
+      setOtpLoading(true);
+      setOtpError("");
+
+      await axiosInstanceClient.post("/astrologer/register/verify-otp", {
+        email: form.email.trim(),
+        otp: otp.trim(),
+      });
+
+      toast.success("Email verified! Application submitted.");
+      setStage("submitted");
+    } catch (error) {
+      console.error(
+        "OTP verification failed:",
+        error.response?.data || error.message,
+      );
+      const msg =
+        error.response?.data?.message ||
+        "Verification failed. Please check the code and try again.";
+      setOtpError(msg);
+      toast.error(msg);
+    } finally {
+      setOtpLoading(false);
+    }
+  };
+
+  const handleResendOtp = async () => {
+    try {
+      setResending(true);
+      setOtpError("");
+      await sendOtp();
+      toast.success("A new code has been sent.");
+    } catch (error) {
+      const msg = error.response?.data?.message || "Failed to resend the code.";
+      setOtpError(msg);
+      toast.error(msg);
+    } finally {
+      setResending(false);
+    }
+  };
+
   if (pageLoading) return <AuthCardSkeleton />;
 
-  if (submitted) {
+  if (stage === "submitted") {
     return (
       <div className="cr-login-wrap">
         <LotusWatermark
@@ -147,8 +205,8 @@ const RegisterForm = ({ onSwitchToLogin }) => {
               fontWeight: 400,
             }}
           >
-            Your registration is pending review. An admin will approve your
-            account before you can sign in.
+            Your email is verified and your registration is pending review. An
+            admin will approve your account before you can sign in.
           </div>
           <button
             className="cr-login-btn"
@@ -157,6 +215,104 @@ const RegisterForm = ({ onSwitchToLogin }) => {
           >
             Back to Sign in
           </button>
+        </div>
+      </div>
+    );
+  }
+
+  if (stage === "otp") {
+    return (
+      <div className="cr-login-wrap">
+        <LotusWatermark
+          className="cr-login-mandala"
+          size={780}
+          opacity={0.14}
+        />
+        <div className="cr-login-card">
+          <div className="cr-register-success-icon">
+            <ShieldCheck size={26} color="var(--gold, #c9a227)" />
+          </div>
+          <div
+            className="cr-login-title cr-shimmer-text"
+            style={{ marginTop: 14 }}
+          >
+            Verify your email
+          </div>
+          <div
+            className="cr-login-sub"
+            style={{
+              color: "var(--text-dim)",
+              textTransform: "none",
+              letterSpacing: 0,
+              fontWeight: 400,
+            }}
+          >
+            We sent a 6-digit code to <strong>{form.email.trim()}</strong>
+          </div>
+
+          {otpError && (
+            <div
+              className="cr-error-box"
+              style={{ marginTop: 16, marginBottom: 4 }}
+            >
+              <div className="cr-error-row">
+                <AlertCircle
+                  size={16}
+                  color="var(--danger)"
+                  style={{ marginTop: 2, flexShrink: 0 }}
+                />
+                <p className="cr-error-msg">{otpError}</p>
+              </div>
+            </div>
+          )}
+
+          <label className="cr-field-label" style={{ marginTop: 18 }}>
+            Verification Code
+          </label>
+          <div className="cr-field">
+            <ShieldCheck size={15} color="#9C8A6A" />
+            <input
+              value={otp}
+              onChange={(e) => setOtp(e.target.value)}
+              placeholder="123456"
+              inputMode="numeric"
+              maxLength={6}
+              autoFocus
+            />
+          </div>
+
+          <button
+            className="cr-login-btn"
+            onClick={handleVerifyOtp}
+            disabled={otpLoading}
+            style={{ marginTop: 16 }}
+          >
+            {otpLoading ? "Verifying..." : "Verify & Create Account"}
+          </button>
+
+          <div className="cr-login-route">
+            Didn't get the code?{" "}
+            <b>
+              <button
+                type="button"
+                className="cr-link-btn"
+                onClick={handleResendOtp}
+                disabled={resending}
+              >
+                {resending ? "Sending..." : "Resend code"}
+              </button>
+            </b>
+          </div>
+
+          <div className="cr-login-route">
+            <button
+              type="button"
+              className="cr-link-btn"
+              onClick={() => setStage("form")}
+            >
+              ← Back to edit details
+            </button>
+          </div>
         </div>
       </div>
     );
@@ -187,7 +343,6 @@ const RegisterForm = ({ onSwitchToLogin }) => {
           </div>
         )}
 
-        {/* Row 1: Full Name + Phone */}
         <div className="cr-row-2col">
           <div className="cr-field-col">
             <label className="cr-field-label">Full Name</label>
@@ -213,7 +368,6 @@ const RegisterForm = ({ onSwitchToLogin }) => {
           </div>
         </div>
 
-        {/* Row 2: Email (own row) */}
         <label className="cr-field-label">Email</label>
         <div className="cr-field">
           <Mail size={15} color="#9C8A6A" />
@@ -224,7 +378,6 @@ const RegisterForm = ({ onSwitchToLogin }) => {
           />
         </div>
 
-        {/* Row 3: Password + Confirm Password */}
         <div className="cr-row-2col">
           <div className="cr-field-col">
             <label className="cr-field-label">Password</label>
@@ -246,7 +399,6 @@ const RegisterForm = ({ onSwitchToLogin }) => {
           </div>
         </div>
 
-        {/* Row 4: Years of Experience (own row) */}
         <label className="cr-field-label">Years of Experience</label>
         <div className="cr-field">
           <Briefcase size={15} color="#9C8A6A" />
@@ -259,7 +411,6 @@ const RegisterForm = ({ onSwitchToLogin }) => {
           />
         </div>
 
-        {/* Row 5: Expertise + Languages (both dropdowns) */}
         <div className="cr-row-2col">
           <div className="cr-field-col">
             <label className="cr-field-label">Expertise</label>
@@ -283,7 +434,6 @@ const RegisterForm = ({ onSwitchToLogin }) => {
           </div>
         </div>
 
-        {/* Row 6: Short Bio (own row) */}
         <label className="cr-field-label">Short Bio</label>
         <div className="cr-field cr-field-textarea">
           <FileText size={15} color="#9C8A6A" style={{ marginTop: 2 }} />
@@ -301,7 +451,7 @@ const RegisterForm = ({ onSwitchToLogin }) => {
           disabled={loading}
           style={{ marginTop: 4 }}
         >
-          {loading ? "Submitting..." : "Create Account"}
+          {loading ? "Sending code..." : "Continue"}
         </button>
 
         <div className="cr-login-route">
