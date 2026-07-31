@@ -19,10 +19,10 @@ const LoginView = ({ onLogin, onSwitchToRegister }) => {
     try {
       setLoading(true);
 
-      if(!email & !password){
+      if (!email & !password) {
         return;
       }
-console.table(email, password);
+      console.table(email, password);
       const response = await axiosInstanceClient.post("/astrologer/login", {
         email,
         password,

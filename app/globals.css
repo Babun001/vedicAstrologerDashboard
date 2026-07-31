@@ -22,9 +22,15 @@
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
+  /* background: var(--background);
+  color: var(--foreground); */
   font-family: Arial, Helvetica, sans-serif;
+}
+body {
+  background-image: url("/bg-final.jpg.jpeg");
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
 }
 
 /* ---------- Create Report page ---------- */
@@ -519,13 +525,8 @@ body {
   cursor: not-allowed;
 }
 .cr-btn.primary {
-  background: linear-gradient(
-    150deg,
-    var(--gold-bright),
-    var(--gold) 60%,
-    #8a5e19
-  );
-  color: #2a1706;
+  background: linear-gradient(150deg, var(--gold-bright), var(--gold) 60%);
+  color: #fff;
   box-shadow:
     var(--shadow-sm),
     inset 0 1px 0 #ffe6b355;

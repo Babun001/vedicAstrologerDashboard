@@ -87,8 +87,8 @@
   --text-faint: #9c8a6a;
   --cream-text: #f3e7cc;
   --cream-text-faint: #b49e76;
-  --gold: #c08a26;
-  --gold-bright: #e0ac46;
+  --gold: #884f18;
+  --gold-bright: #884f18;
   --gold-soft: #c08a2620;
   --maroon: #8a3e24;
   --maroon-soft: #8a3e2422;
@@ -109,7 +109,7 @@
     0 4px 12px -4px rgba(43, 29, 16, 0.12);
 
   font-family: "Inter", sans-serif;
-  background:
+  /* background:
     radial-gradient(1.5px 1.5px at 8% 12%, #c08a2635 40%, transparent 41%),
     radial-gradient(1.5px 1.5px at 22% 68%, #8a3e2430 40%, transparent 41%),
     radial-gradient(1.5px 1.5px at 38% 30%, #c08a2630 40%, transparent 41%),
@@ -121,7 +121,7 @@
     radial-gradient(ellipse 60% 40% at 15% 0%, #c08a2620, transparent 55%),
     radial-gradient(ellipse 60% 45% at 100% 100%, #8a3e2420, transparent 55%),
     radial-gradient(ellipse 50% 40% at 90% 5%, #e0ac4614, transparent 60%),
-    var(--cream-bg);
+    var(--cream-bg); */
   color: var(--text);
   min-height: 100vh;
   font-size: 14px;
@@ -199,7 +199,7 @@
   animation-iteration-count: infinite;
 }
 .cr-mandala-spin {
-  animation: cr-spin-slow 160s linear infinite;
+  /* animation: cr-spin-slow 160s linear infinite; */
   transform-origin: center;
 }
 .cr-shimmer-text {
@@ -285,12 +285,12 @@
   justify-content: center;
   position: relative;
   overflow: hidden;
-  background: radial-gradient(
+  /* background: radial-gradient(
     ellipse 80% 65% at 50% 38%,
     #fbf1de 0%,
     #f2e2c4 55%,
     #e9d1a0 100%
-  );
+  ); */
   padding: 24px;
 }
 .cr-login-mandala {
@@ -364,7 +364,7 @@
   gap: 9px;
   background: var(--cream-panel);
   border: 1px solid var(--tan-border-soft);
-  border-radius: 10px;
+  border-radius: 5px;
   padding: 11px 13px;
   margin-bottom: 17px;
   transition:
@@ -390,15 +390,10 @@
 .cr-login-btn {
   width: 100%;
   padding: 12px 0;
-  border-radius: 10px;
+  border-radius: 6px;
   border: none;
-  background: linear-gradient(
-    150deg,
-    var(--gold-bright),
-    var(--gold) 60%,
-    #8a5e19
-  );
-  color: #2a1706;
+  background: linear-gradient(150deg, var(--gold-bright), var(--gold) 60%);
+  color: #fff;
   font-weight: 700;
   font-size: 13px;
   cursor: pointer;
@@ -441,11 +436,12 @@
   flex-shrink: 0;
   position: relative;
   overflow: hidden;
-  background: linear-gradient(
+  /* background: linear-gradient(
     175deg,
     var(--coffee) 0%,
     var(--coffee-dark) 100%
-  );
+  ); */
+  background: linear-gradient(135deg, rgb(58, 40, 0), rgb(90, 63, 0));
   box-shadow: 4px 0 24px -8px rgba(24, 15, 8, 0.35);
   display: flex;
   flex-direction: column;
@@ -554,7 +550,7 @@
   margin-left: auto;
   font-size: 10px;
   font-family: "IBM Plex Mono", monospace;
-  color: var(--gold-bright);
+  color: #fff;
   background: #c08a2626;
   padding: 1.5px 6px;
   border-radius: 20px;
@@ -601,13 +597,14 @@
   gap: 12px;
   padding: 11px 12px;
   border-radius: 11px;
-  background: var(--coffee-dark);
+  /* background: var(--coffee-dark); */
+  background: linear-gradient(135deg, #3a2800, #5a3f00);
   border: 1px solid #ffffff0f;
   margin-bottom: 12px;
 }
 .cr-cap-label {
   font-size: 11px;
-  color: #8a7657;
+  color: #c7c4c0;
 }
 .cr-cap-value {
   font-size: 13px;
@@ -618,7 +615,7 @@
 .cr-logout {
   text-align: center;
   font-size: 11.5px;
-  color: #8a7657;
+  color: #c7c4c0;
   cursor: pointer;
   padding: 6px 0;
 }
@@ -678,20 +675,18 @@
   border-color: #d9c088;
 }
 .cr-avatar {
-  width: 33px;
-  height: 33px;
+  width: 40px;
+  height: 40px;
   border-radius: 50%;
-  background: linear-gradient(150deg, #a6572f, var(--maroon));
-  color: #f6e4d3;
+  background: linear-gradient(135deg, rgb(58, 40, 0), rgb(90, 63, 0));
+  border: 1px solid rgba(139, 105, 20, 0.5);
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 11.5px;
+  font-size: 11px;
+  color: rgb(201, 162, 39);
   font-weight: 700;
-  font-family: "IBM Plex Mono", monospace;
-  box-shadow:
-    var(--shadow-sm),
-    inset 0 1px 0 #ffffff20;
+  flex-shrink: 0;
 }
 .cr-content {
   flex: 1;
@@ -1112,11 +1107,11 @@
 }
 .cr-send-btn {
   background: var(--gold);
-  color: #2a1b0e;
+  color: #fff;
   border: none;
   width: 36px;
   height: 36px;
-  border-radius: 8px;
+  border-radius: 6px;
   display: flex;
   align-items: center;
   justify-content: center;

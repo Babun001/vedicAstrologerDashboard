@@ -1,6 +1,13 @@
 "use client";
-import { Sparkles, Inbox, ClipboardList, X, Award,FilePlus } from "lucide-react";
-import { StarField } from "../common/StarField";
+import {
+  Sparkles,
+  Inbox,
+  ClipboardList,
+  X,
+  Award,
+  FilePlus,
+} from "lucide-react";
+// import { StarField } from "../common/StarField";
 import { LotusWatermark } from "../common/LotusWatermark";
 
 const nav = [
@@ -19,10 +26,10 @@ export const Sidebar = ({
   astrologer,
 }) => (
   <aside className={`cr-sidebar ${mobileNavOpen ? "open" : ""}`}>
-    <StarField />
+    {/* <StarField /> */}
     <LotusWatermark className="cr-sidebar-mandala" size={340} opacity={0.1} />
     <div className="cr-brand">
-      <img src="/image.webp" alt="Cosmic Remedies" className="cr-brand-mark" />
+      {/* <img src="/image.webp" alt="Cosmic Remedies" className="cr-brand-mark" /> */}
       <div>
         <div className="cr-brand-name cr-shimmer-text">Cosmic Remedies</div>
         <div className="cr-brand-sub">Astrologer Desk</div>
@@ -46,7 +53,9 @@ export const Sidebar = ({
           >
             <Icon className="cr-navicon" />
             {item.label}
-            {item.badge ? <span className="cr-navbadge">{item.badge}</span> : null}
+            {item.badge ? (
+              <span className="cr-navbadge">{item.badge}</span>
+            ) : null}
           </div>
         );
       })}
@@ -59,7 +68,9 @@ export const Sidebar = ({
         </div>
         <div>
           <div className="cr-cap-label">Reports delivered</div>
-          <div className="cr-cap-value">{astrologer?.totalReportsDelivered ?? 0}</div>
+          <div className="cr-cap-value">
+            {astrologer?.totalReportsDelivered ?? 0}
+          </div>
         </div>
       </div>
       <div className="cr-logout" onClick={onSignOut}>
