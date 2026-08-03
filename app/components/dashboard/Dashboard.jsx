@@ -19,7 +19,7 @@ import { NotificationProvider } from "../context/NotificationContext";
 export default function Dashboard() {
   const [authed, setAuthed] = useState(false);
   const [view, setView] = useState("work");
-  const [activeConvo, setActiveConvo] = useState("c2");
+  const [activeConvo, setActiveConvo] = useState(null);
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [selectedReportId, setSelectedReportId] = useState(null);
   const [selectedReport, setSelectedReport] = useState(null);
