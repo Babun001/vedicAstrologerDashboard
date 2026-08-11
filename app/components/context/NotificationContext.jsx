@@ -35,6 +35,39 @@ const saveStored = (list) => {
   }
 };
 
+// A short, synthesized two-tone chime via the Web Audio API — no audio
+// file to ship, host, or have go 404 in production. Built lazily and
+// reused so repeated notifications don't leak AudioContext instances
+// (browsers cap how many can be created).
+let audioCtx = null;
+
+const playChime = () => {
+  if (typeof window === "undefined") return;
+  try {
+    const Ctx = window.AudioContext || window.webkitAudioContext;
+    if (!Ctx) return;
+    if (!audioCtx) audioCtx = new Ctx();
+    if (audioCtx.state === "suspended") audioCtx.resume();
+
+    const now = audioCtx.currentTime;
+    [880, 1175].forEach((freq, i) => {
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.type = "sine";
+      osc.frequency.value = freq;
+      const start = now + i * 0.12;
+      gain.gain.setValueAtTime(0, start);
+      gain.gain.linearRampToValueAtTime(0.15, start + 0.02);
+      gain.gain.exponentialRampToValueAtTime(0.001, start + 0.28);
+      osc.connect(gain).connect(audioCtx.destination);
+      osc.start(start);
+      osc.stop(start + 0.3);
+    });
+  } catch {
+    // Audio isn't essential — a failure here should never break notifications.
+  }
+};
+
 export function NotificationProvider({ children }) {
   const [notifications, setNotifications] = useState([]);
   const esRef = useRef(null);
@@ -43,7 +76,7 @@ export function NotificationProvider({ children }) {
     setNotifications(loadStored());
   }, []);
 
-  const addNotification = useCallback((type, title, body) => {
+  const addNotification = useCallback((type, title, body, { sound = false } = {}) => {
     setNotifications((prev) => {
       const next = [
         {
@@ -59,6 +92,8 @@ export function NotificationProvider({ children }) {
       saveStored(next);
       return next;
     });
+
+    if (sound) playChime();
   }, []);
 
   const markAsRead = useCallback((id) => {
@@ -102,14 +137,32 @@ export function NotificationProvider({ children }) {
           `Admin sent back the report for ${clientName}${
             report.adminReview.reviewNote ? `: "${report.adminReview.reviewNote}"` : ""
           }`,
+          { sound: true },
         );
       } else {
         addNotification(
           "assignment",
           "New task assigned",
           `You've been assigned a new report for ${clientName}.`,
+          { sound: true },
         );
       }
+    });
+
+    // Was nested INSIDE the "new-task-assigned" callback above — which
+    // meant this listener only ever got registered after a report task
+    // fired at least once. An astrologer who only ever received
+    // questions (no report tasks) would never have this listener
+    // attached at all, so question-assignment notifications silently
+    // never fired. Moved out to a sibling listener, registered
+    // unconditionally alongside the others.
+    es.addEventListener("new-question-assigned", () => {
+      addNotification(
+        "assignment",
+        "New question assigned",
+        "A client has a new question waiting for your reply.",
+        { sound: true },
+      );
     });
 
     es.addEventListener("report-delivered", (event) => {
@@ -128,6 +181,11 @@ export function NotificationProvider({ children }) {
         `Your report for ${clientName} was approved and delivered to the client.`,
       );
     });
+
+    es.onerror = () => {
+      // EventSource auto-reconnects on its own; this just avoids an
+      // unhandled-error console spam on transient network drops.
+    };
 
     return () => es.close();
   }, [addNotification]);

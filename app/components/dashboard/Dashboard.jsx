@@ -15,13 +15,16 @@ import { useEffect } from "react";
 import { DashboardSkeleton } from "../common/Skeleton";
 import ProfileView from "../profile/ProfileView";
 import { NotificationProvider } from "../context/NotificationContext";
+import { InboxProvider } from "../context/InboxContext";
+import { QuestionsView } from "../questions/QuestionsView";
+import AnswerQuestion from "../questions/AnswerQuestion";
 
 export default function Dashboard() {
   const [authed, setAuthed] = useState(false);
   const [view, setView] = useState("work");
-  const [activeConvo, setActiveConvo] = useState(null);
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [selectedReportId, setSelectedReportId] = useState(null);
+  const [selectedQuestion, setSelectedQuestion] = useState(null);
   const [selectedReport, setSelectedReport] = useState(null);
   const [astrologer, setAstrologer] = useState(null);
   const [authView, setAuthView] = useState("login");
@@ -66,6 +69,7 @@ export default function Dashboard() {
         )
       ) : (
         <NotificationProvider>
+          <InboxProvider>
           <div className="cr-shell">
             {mobileNavOpen && (
               <div
@@ -112,12 +116,7 @@ export default function Dashboard() {
                       <MyWorkView onViewTasks={() => setView("tasks")} />
                     )}
 
-                    {view === "inbox" && (
-                      <InboxView
-                        activeConvo={activeConvo}
-                        setActiveConvo={setActiveConvo}
-                      />
-                    )}
+                    {view === "inbox" && <InboxView />}
 
                     {view === "tasks" && (
                       <TasksView
@@ -132,6 +131,22 @@ export default function Dashboard() {
                       <CreateReport report={selectedReportId} />
                     )}
 
+                    {view === "questions" && (
+                      <QuestionsView
+                        onAnswerQuestion={(question) => {
+                          setSelectedQuestion(question);
+                          setView("answer-question");
+                        }}
+                      />
+                    )}
+
+                    {view === "answer-question" && (
+                      <AnswerQuestion
+                        question={selectedQuestion}
+                        onBack={() => setView("questions")}
+                      />
+                    )}
+
                     {view === "profile" && (
                       <ProfileView
                         astrologer={astrologer}
@@ -143,6 +158,7 @@ export default function Dashboard() {
               )}
             </main>
           </div>
+          </InboxProvider>
         </NotificationProvider>
       )}
     </div>

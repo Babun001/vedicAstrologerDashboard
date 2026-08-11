@@ -5,6 +5,7 @@ import { StatusPill } from "../common/StatusPill";
 import { InboxSkeleton } from "../common/Skeleton";
 import axiosInstanceClient from "../services/client.services";
 import { getSocket } from "../services/socket.services";
+import { useInbox } from "../context/InboxContext";
 
 const channelFromPlatform = (platform) => {
   if (!platform) return "fb";
@@ -24,49 +25,34 @@ const formatRelativeTime = (dateString) => {
   return `${Math.floor(hrs / 24)}d`;
 };
 
-export const InboxView = ({ activeConvo, setActiveConvo }) => {
-  const [conversations, setConversations] = useState([]);
+// The conversation list + unread counts now live in InboxContext (shared
+// with the Sidebar badge). This view just reads from it and owns the
+// message-thread state (messages, draft, sending) that nothing else needs.
+export const InboxView = () => {
+  const {
+    conversations,
+    activeConvo,
+    setActiveConvo,
+    loading,
+    error: convoError,
+    markConversationRead,
+  } = useInbox();
+
   const [messages, setMessages] = useState([]);
-  const [loading, setLoading] = useState(true);
   const [messagesLoading, setMessagesLoading] = useState(false);
   const [draft, setDraft] = useState("");
   const [sending, setSending] = useState(false);
   const [error, setError] = useState(null);
 
   const seenMessageIds = useRef(new Set());
-  const activeConvoRef = useRef(activeConvo);
-  activeConvoRef.current = activeConvo;
 
-  // Initial conversation list load
+  // Fall back to the first real conversation once the list loads, if
+  // nothing is selected yet.
   useEffect(() => {
-    let cancelled = false;
-
-    axiosInstanceClient
-      .get("/messages/conversations")
-      .then((res) => {
-        if (cancelled) return;
-        const list = res.data.data || [];
-        setConversations(list);
-
-        // If the currently active id isn't in the real list (e.g. still
-        // the "c2" placeholder from Dashboard's default state), fall
-        // back to the first real conversation.
-        if (list.length > 0 && !list.some((c) => c._id === activeConvoRef.current)) {
-          setActiveConvo(list[0]._id);
-        }
-      })
-      .catch((err) => {
-        console.error("Failed to load conversations:", err);
-        if (!cancelled) setError("Couldn't load conversations");
-      })
-      .finally(() => {
-        if (!cancelled) setLoading(false);
-      });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [setActiveConvo]);
+    if (!loading && conversations.length > 0 && !activeConvo) {
+      setActiveConvo(conversations[0]._id);
+    }
+  }, [loading, conversations, activeConvo, setActiveConvo]);
 
   // Load messages whenever the selected conversation changes
   useEffect(() => {
@@ -82,10 +68,9 @@ export const InboxView = ({ activeConvo, setActiveConvo }) => {
         seenMessageIds.current = new Set(msgs.map((m) => m._id));
         setMessages(msgs);
 
-        // Reflect the server-side unread reset locally
-        setConversations((prev) =>
-          prev.map((c) => (c._id === activeConvo ? { ...c, unreadCount: 0 } : c))
-        );
+        // Server already reset unreadCount for this conversation —
+        // mirror it locally so the badge updates immediately.
+        markConversationRead(activeConvo);
       })
       .catch((err) => {
         console.error("Failed to load messages:", err);
@@ -98,62 +83,25 @@ export const InboxView = ({ activeConvo, setActiveConvo }) => {
     return () => {
       cancelled = true;
     };
-  }, [activeConvo]);
+  }, [activeConvo, markConversationRead]);
 
-  // Real-time updates
+  // Append incoming messages to the open thread in real time. Conversation
+  // list / unread-count updates are handled centrally by InboxContext —
+  // this only needs to worry about the currently open thread.
   useEffect(() => {
     const socket = getSocket();
 
     const handleNewMessage = ({ conversationId, message }) => {
       if (!conversationId || !message) return;
-
-      // Update the conversation list (preview, unread count, ordering)
-      setConversations((prev) => {
-        const exists = prev.some((c) => c._id === conversationId);
-        let next;
-
-        if (exists) {
-          next = prev.map((c) =>
-            c._id === conversationId
-              ? {
-                  ...c,
-                  lastMessage: {
-                    text: message.content?.text,
-                    at: message.createdAt || new Date().toISOString(),
-                  },
-                  unreadCount:
-                    conversationId === activeConvoRef.current
-                      ? 0
-                      : (c.unreadCount || 0) + (message.direction === "incoming" ? 1 : 0),
-                }
-              : c
-          );
-        } else {
-          // Message from a brand-new conversation we don't have yet —
-          // simplest correct fix is to refetch the list.
-          axiosInstanceClient
-            .get("/messages/conversations")
-            .then((res) => setConversations(res.data.data || []))
-            .catch((err) => console.error("Failed to refresh conversations:", err));
-          next = prev;
-        }
-
-        return [...next].sort(
-          (a, b) => new Date(b.lastMessage?.at || 0) - new Date(a.lastMessage?.at || 0)
-        );
-      });
-
-      // Append to the open thread if it's the active conversation
-      if (conversationId === activeConvoRef.current) {
-        if (seenMessageIds.current.has(message._id)) return;
-        seenMessageIds.current.add(message._id);
-        setMessages((prev) => [...prev, message]);
-      }
+      if (conversationId !== activeConvo) return;
+      if (seenMessageIds.current.has(message._id)) return;
+      seenMessageIds.current.add(message._id);
+      setMessages((prev) => [...prev, message]);
     };
 
     socket.on("newMessage", handleNewMessage);
     return () => socket.off("newMessage", handleNewMessage);
-  }, []);
+  }, [activeConvo]);
 
   const handleSend = useCallback(async () => {
     const text = draft.trim();
@@ -173,16 +121,6 @@ export const InboxView = ({ activeConvo, setActiveConvo }) => {
         seenMessageIds.current.add(saved._id);
         setMessages((prev) => [...prev, saved]);
       }
-
-      setConversations((prev) =>
-        [...prev]
-          .map((c) =>
-            c._id === activeConvo
-              ? { ...c, lastMessage: { text, at: new Date().toISOString() } }
-              : c
-          )
-          .sort((a, b) => new Date(b.lastMessage?.at || 0) - new Date(a.lastMessage?.at || 0))
-      );
     } catch (err) {
       console.error("Failed to send message:", err);
       setError("Message failed to send");
@@ -229,6 +167,9 @@ export const InboxView = ({ activeConvo, setActiveConvo }) => {
                 </div>
                 <div className="cr-convo-preview">{c.lastMessage?.text || "No messages yet"}</div>
               </div>
+              {(c.unreadCount || 0) > 0 && c._id !== activeConvo && (
+                <span className="cr-convo-unread-dot">{c.unreadCount > 9 ? "9+" : c.unreadCount}</span>
+              )}
             </div>
           );
         })}
@@ -237,7 +178,7 @@ export const InboxView = ({ activeConvo, setActiveConvo }) => {
       <div className="cr-thread">
         {!convo ? (
           <div style={{ padding: 24, color: "var(--text-faint)" }}>
-            {error || "Select a conversation"}
+            {error || convoError || "Select a conversation"}
           </div>
         ) : (
           <>

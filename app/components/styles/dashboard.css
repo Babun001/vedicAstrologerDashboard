@@ -1039,6 +1039,22 @@
   font-family: "IBM Plex Mono", monospace;
   flex-shrink: 0;
 }
+.cr-convo-unread-dot {
+  flex-shrink: 0;
+  align-self: center;
+  min-width: 17px;
+  height: 17px;
+  padding: 0 5px;
+  border-radius: 20px;
+  background: var(--gold-bright, #c9a227);
+  color: #fff;
+  font-size: 10px;
+  font-weight: 700;
+  font-family: "IBM Plex Mono", monospace;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
 
 .cr-thread {
   background: var(--cream-panel-raised);
