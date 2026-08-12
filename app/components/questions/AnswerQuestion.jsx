@@ -30,10 +30,11 @@ const AI_GENERATION_ENABLED = true;
  * Must carry at least `questionId` (the real Question._id).
  */
 export default function AnswerQuestion({ question, onBack }) {
-  // Optional steer typed by the astrologer before generating — sent as
-  // astrologerNotes, NOT as a draft. The /generate endpoint writes the
-  // answer from scratch using the question + client's birth details.
-  const [aiNotes, setAiNotes] = useState("");
+  // The astrologer's own calculation/finding in shorthand — e.g. "Saturn
+  // transit 7th house, delay till March, suggest patience". This is
+  // REQUIRED: the AI explains/expands it into the fixed reply template,
+  // it never invents the astrology itself.
+  const [astrologerInput, setAstrologerInput] = useState("");
   const [answer, setAnswer] = useState("");
   // Untouched AI output, kept for the aiAssisted/rawAnswerText audit
   // trail even after the astrologer edits `answer` in the editor.
@@ -59,13 +60,20 @@ export default function AnswerQuestion({ question, onBack }) {
       return;
     }
 
+    if (!astrologerInput.trim()) {
+      setGenError(
+        "Enter your reading in a few words first — e.g. \"Saturn transit 7th house, delay till March, suggest patience\".",
+      );
+      return;
+    }
+
     setGenError("");
     setGenerating(true);
 
     try {
       const res = await axiosInstanceClient.post(
         `/astrologer/questions/${question.questionId}/generate`,
-        aiNotes.trim() ? { astrologerNotes: aiNotes.trim() } : {},
+        { astrologerInput: astrologerInput.trim() },
       );
 
       const generated = res.data?.data?.generatedAnswer || "";
@@ -263,10 +271,10 @@ export default function AnswerQuestion({ question, onBack }) {
         </div>
 
         <p className="cr-form-card-hint" style={{ marginBottom: 10 }}>
-          Optionally add a few words to steer the draft — AI will write a
-          full first-pass answer you can edit below before sending. It
-          doesn't know the client's calculated chart, so always verify any
-          astrological detail against your own reading before you send.
+          Enter your reading in a few words — planets, transit, timing,
+          whatever you calculated — and AI will turn it into a full,
+          warm reply in the standard reply template. It only explains
+          what you give it; it never adds astrology of its own.
           {!AI_GENERATION_ENABLED &&
             " This is disabled until the AI credits are activated — write your answer directly in the editor below for now."}
         </p>
@@ -274,9 +282,9 @@ export default function AnswerQuestion({ question, onBack }) {
         <textarea
           rows={2}
           className="cr-textarea"
-          placeholder="Optional — e.g. focus on career timing, keep it brief, client already knows their sun sign"
-          value={aiNotes}
-          onChange={(e) => setAiNotes(e.target.value)}
+          placeholder='e.g. "Saturn transit 7th house, delay till March, suggest patience and a Saturday charity donation"'
+          value={astrologerInput}
+          onChange={(e) => setAstrologerInput(e.target.value)}
           disabled={!AI_GENERATION_ENABLED}
         />
 
