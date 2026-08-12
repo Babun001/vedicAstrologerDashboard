@@ -16,13 +16,12 @@ import axiosInstanceClient from "../services/client.services";
 import { useEarnings } from "../context/EarningsContext";
 
 // ─────────────────────────────────────────────────────────────────────
-// FEATURE FLAG — flip this to `true` once Gemini credits are purchased
-// and POST /astrologer/questions/:id/improve is ready to be called for
-// real. Everything downstream (the button, the request, aiAssisted
-// tagging on send) is already wired — this is the only line that needs
-// to change.
+// FEATURE FLAG — AI drafting is now live via
+// POST /astrologer/questions/:id/generate (OpenAI, draft-from-scratch).
+// Flip back to `false` to hide the AI Assist card again without
+// touching anything else.
 // ─────────────────────────────────────────────────────────────────────
-const AI_GENERATION_ENABLED = false;
+const AI_GENERATION_ENABLED = true;
 
 /**
  * `question` is the object clicked from QuestionsView/QuestionModal — it
@@ -31,8 +30,14 @@ const AI_GENERATION_ENABLED = false;
  * Must carry at least `questionId` (the real Question._id).
  */
 export default function AnswerQuestion({ question, onBack }) {
-  const [aiPrompt, setAiPrompt] = useState("");
+  // Optional steer typed by the astrologer before generating — sent as
+  // astrologerNotes, NOT as a draft. The /generate endpoint writes the
+  // answer from scratch using the question + client's birth details.
+  const [aiNotes, setAiNotes] = useState("");
   const [answer, setAnswer] = useState("");
+  // Untouched AI output, kept for the aiAssisted/rawAnswerText audit
+  // trail even after the astrologer edits `answer` in the editor.
+  const [rawGeneratedAnswer, setRawGeneratedAnswer] = useState("");
   const [aiAssisted, setAiAssisted] = useState(false);
   const [generating, setGenerating] = useState(false);
   const [genError, setGenError] = useState("");
@@ -47,8 +52,10 @@ export default function AnswerQuestion({ question, onBack }) {
   const handleGenerate = async () => {
     if (!AI_GENERATION_ENABLED) return; // guarded — button is disabled too
 
-    if (!aiPrompt.trim()) {
-      setGenError("Type a few words about what you want to say first.");
+    if (!question?.questionId) {
+      setGenError(
+        "No question selected — go back to the board and open a question first.",
+      );
       return;
     }
 
@@ -57,11 +64,13 @@ export default function AnswerQuestion({ question, onBack }) {
 
     try {
       const res = await axiosInstanceClient.post(
-        `/astrologer/questions/${question.questionId}/improve`,
-        { draftAnswer: aiPrompt },
+        `/astrologer/questions/${question.questionId}/generate`,
+        aiNotes.trim() ? { astrologerNotes: aiNotes.trim() } : {},
       );
 
-      setAnswer(res.data?.data?.improvedAnswer || "");
+      const generated = res.data?.data?.generatedAnswer || "";
+      setAnswer(generated);
+      setRawGeneratedAnswer(generated);
       setAiAssisted(true);
     } catch (error) {
       console.error("AI generation failed:", error);
@@ -75,9 +84,9 @@ export default function AnswerQuestion({ question, onBack }) {
   };
 
   // Editing the answer after an AI generation still counts as
-  // "AI-assisted" for the audit trail (rawAnswerText keeps the original
-  // AI output; answerText is whatever ships). Typing from scratch with
-  // no generation ever having run keeps aiAssisted false.
+  // "AI-assisted" for the audit trail (rawGeneratedAnswer keeps the
+  // original AI output; answerText is whatever ships). Typing from
+  // scratch with no generation ever having run keeps aiAssisted false.
   const handleAnswerChange = (html) => {
     setAnswer(html);
   };
@@ -106,7 +115,7 @@ export default function AnswerQuestion({ question, onBack }) {
         `/astrologer/questions/${question.questionId}/answer`,
         {
           answerText: answer,
-          rawAnswerText: aiAssisted ? aiPrompt : answer,
+          rawAnswerText: aiAssisted ? rawGeneratedAnswer : answer,
           aiAssisted,
         },
       );
@@ -237,7 +246,7 @@ export default function AnswerQuestion({ question, onBack }) {
         </div>
       </div>
 
-      {/* ── AI assist — stubbed until Gemini credits are active ── */}
+      {/* ── AI assist — draft-from-scratch via OpenAI /generate ── */}
       <div className="cr-form-card" style={{ marginBottom: 18 }}>
         <div className="cr-form-card-head">
           <h3 className="cr-form-card-title">
@@ -254,8 +263,10 @@ export default function AnswerQuestion({ question, onBack }) {
         </div>
 
         <p className="cr-form-card-hint" style={{ marginBottom: 10 }}>
-          Type a few words about what you want to say — AI will turn it into a
-          full, polished answer you can edit below before sending.
+          Optionally add a few words to steer the draft — AI will write a
+          full first-pass answer you can edit below before sending. It
+          doesn't know the client's calculated chart, so always verify any
+          astrological detail against your own reading before you send.
           {!AI_GENERATION_ENABLED &&
             " This is disabled until the AI credits are activated — write your answer directly in the editor below for now."}
         </p>
@@ -263,9 +274,9 @@ export default function AnswerQuestion({ question, onBack }) {
         <textarea
           rows={2}
           className="cr-textarea"
-          placeholder="e.g. career will improve after Saturn transit in March, suggest patience and a donation to..."
-          value={aiPrompt}
-          onChange={(e) => setAiPrompt(e.target.value)}
+          placeholder="Optional — e.g. focus on career timing, keep it brief, client already knows their sun sign"
+          value={aiNotes}
+          onChange={(e) => setAiNotes(e.target.value)}
           disabled={!AI_GENERATION_ENABLED}
         />
 
@@ -283,7 +294,7 @@ export default function AnswerQuestion({ question, onBack }) {
             disabled={!AI_GENERATION_ENABLED || generating}
             title={
               AI_GENERATION_ENABLED
-                ? "Generate a full answer from your notes"
+                ? "Generate a first-draft answer"
                 : "AI generation isn't active yet — write your answer directly below"
             }
           >
