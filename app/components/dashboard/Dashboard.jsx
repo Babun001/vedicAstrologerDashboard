@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import LoginView from "../login/LoginView";
 import RegisterView from "../login/RegisterView";
 import { Sidebar } from "../layout/Sidebar";
@@ -11,7 +11,6 @@ import CreateReport from "../work/CreateReport";
 import { InboxView } from "../inbox/InboxView";
 import { TasksView } from "../tasks/TasksView";
 import axiosInstanceClient from "../services/client.services";
-import { useEffect } from "react";
 import { DashboardSkeleton } from "../common/Skeleton";
 import ProfileView from "../profile/ProfileView";
 import { NotificationProvider } from "../context/NotificationContext";
@@ -21,6 +20,11 @@ import AnswerQuestion from "../questions/AnswerQuestion";
 
 export default function Dashboard() {
   const [authed, setAuthed] = useState(false);
+  // Whether we're still deciding if a stored token is still valid — kept
+  // separate from `authed` so the very first render (before we've even
+  // looked at localStorage) doesn't flash the login form for someone who's
+  // actually still signed in.
+  const [authChecking, setAuthChecking] = useState(true);
   const [view, setView] = useState("work");
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [selectedReportId, setSelectedReportId] = useState(null);
@@ -30,15 +34,45 @@ export default function Dashboard() {
   const [authView, setAuthView] = useState("login");
   const [profileLoading, setProfileLoading] = useState(false);
 
+  // Session bootstrap. A page reload wipes all component state, but the
+  // access token in localStorage is still valid — so on mount we check for
+  // it and, if present, ask the backend to confirm it before dropping the
+  // user back into the dashboard. This is also where an expired/revoked
+  // token gets cleaned up instead of silently failing later.
   useEffect(() => {
-    if (!authed) return;
+    const token = localStorage.getItem("astrologerToken");
+
+    if (!token) {
+      setAuthChecking(false);
+      return;
+    }
+
+    axiosInstanceClient
+      .get("/astrologer/profile")
+      .then((res) => {
+        setAstrologer(res.data.data.astrologer);
+        setAuthed(true);
+      })
+      .catch((err) => {
+        console.error("Stored session is no longer valid:", err);
+        localStorage.removeItem("astrologerToken");
+        setAuthed(false);
+      })
+      .finally(() => setAuthChecking(false));
+  }, []);
+
+  // Re-fetch the profile whenever a fresh login happens (session bootstrap
+  // above already covers the reload case, so this only fires after
+  // LoginView's onLogin()).
+  useEffect(() => {
+    if (!authed || astrologer) return;
     setProfileLoading(true);
     axiosInstanceClient
       .get("/astrologer/profile")
       .then((res) => setAstrologer(res.data.data.astrologer))
       .catch((err) => console.error("Failed to load profile:", err))
       .finally(() => setProfileLoading(false));
-  }, [authed]);
+  }, [authed, astrologer]);
 
   const handleLogout = async () => {
     try {
@@ -50,9 +84,19 @@ export default function Dashboard() {
     } finally {
       // Logout from frontend even if API fails
       localStorage.removeItem("astrologerToken");
+      setAstrologer(null);
       setAuthed(false);
     }
   };
+
+  if (authChecking) {
+    return (
+      <div className="cr-root">
+        <div className="cr-grain" aria-hidden="true" />
+        <DashboardSkeleton />
+      </div>
+    );
+  }
 
   return (
     <div className="cr-root">

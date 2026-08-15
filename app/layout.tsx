@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { ToastProvider } from "./components/context/ToastContext";
-import { NotificationProvider } from "./components/context/NotificationContext";
 import { EarningsProvider } from "./components/context/EarningsContext";
 
 const geistSans = Geist({
@@ -33,9 +32,7 @@ export default function RootLayout({
     >
       <body className="min-h-full flex flex-col" suppressHydrationWarning>
         <ToastProvider>
-          <NotificationProvider>
-            <EarningsProvider>{children}</EarningsProvider>
-          </NotificationProvider>
+          <EarningsProvider>{children}</EarningsProvider>
         </ToastProvider>
       </body>
     </html>
