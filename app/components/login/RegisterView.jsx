@@ -323,7 +323,7 @@ const RegisterForm = ({ onSwitchToLogin }) => {
       <LotusWatermark className="cr-login-mandala" size={780} opacity={0.14} />
       <div className="cr-login-card cr-login-card--wide new">
         <img
-          src="/image.webp"
+          src="/final_logo_170826.png"
           alt="Cosmic Remedies"
           className="cr-login-mark"
         />

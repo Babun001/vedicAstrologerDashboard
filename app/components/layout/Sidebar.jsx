@@ -38,7 +38,7 @@ export const Sidebar = ({
   const nav = navBase.map((item) =>
     item.id === "inbox"
       ? { ...item, badge: view === "inbox" ? 0 : totalUnread }
-      : item
+      : item,
   );
 
   return (
@@ -46,10 +46,14 @@ export const Sidebar = ({
       {/* <StarField /> */}
       <LotusWatermark className="cr-sidebar-mandala" size={340} opacity={0.1} />
       <div className="cr-brand">
-        {/* <img src="/image.webp" alt="Cosmic Remedies" className="cr-brand-mark" /> */}
+        <img
+          src="/final_logo_170826.png"
+          alt="Cosmic Remedies"
+          className="cr-brand-mark"
+        />
         <div>
-          <div className="cr-brand-name cr-shimmer-text">Cosmic Remedies</div>
-          <div className="cr-brand-sub">Astrologer Desk</div>
+          {/* <div className="cr-brand-name cr-shimmer-text">Cosmic Remedies</div>
+          <div className="cr-brand-sub">Astrologer Desk</div> */}
         </div>
         <div className="cr-mobile-close" onClick={onCloseMobile}>
           <X size={18} />
@@ -71,7 +75,9 @@ export const Sidebar = ({
               <Icon className="cr-navicon" />
               {item.label}
               {item.badge ? (
-                <span className="cr-navbadge">{item.badge > 9 ? "9+" : item.badge}</span>
+                <span className="cr-navbadge">
+                  {item.badge > 9 ? "9+" : item.badge}
+                </span>
               ) : null}
             </div>
           );

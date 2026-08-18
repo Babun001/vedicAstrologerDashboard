@@ -7,7 +7,8 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  color: var(--gold, #c9a227);
+  /* color: var(--gold, #c9a227); */
+  color: rgb(245 167 3 / var(--tw-text-opacity, 1));
   flex-shrink: 0;
 }
 /* Cosmic Remedies dashboard — consolidated styles (root palette, sidebar, topbar, login, inbox, tasks, modal) */
@@ -327,7 +328,7 @@
   );
 }
 .cr-login-mark {
-  height: 58px;
+  height: 70px;
   width: auto;
   object-fit: contain;
   margin: 4px auto 18px;
@@ -441,7 +442,8 @@
     var(--coffee) 0%,
     var(--coffee-dark) 100%
   ); */
-  background: linear-gradient(135deg, rgb(58, 40, 0), rgb(90, 63, 0));
+  /* background: linear-gradient(135deg, rgb(58, 40, 0), rgb(90, 63, 0)); */
+  background-color: rgb(255 248 241 / var(--tw-bg-opacity, 1));
   box-shadow: 4px 0 24px -8px rgba(24, 15, 8, 0.35);
   display: flex;
   flex-direction: column;
@@ -471,7 +473,7 @@
   z-index: 1;
 }
 .cr-brand-mark {
-  height: 34px;
+  height: auto;
   width: auto;
   object-fit: contain;
   flex-shrink: 0;
@@ -510,7 +512,8 @@
   gap: 10px;
   padding: 9.5px 10px 9.5px 13px;
   border-radius: 8px;
-  color: var(--cream-text-faint);
+  /* color: var(--cream-text-faint); */
+  color: #7a6a5a;
   font-size: 13px;
   font-weight: 500;
   cursor: pointer;
@@ -520,12 +523,16 @@
     color 0.15s ease;
 }
 .cr-navitem:hover {
-  background: #ffffff08;
-  color: var(--cream-text);
+  color: #7a6a5a;
+  /* color: var(--cream-text); */
 }
 .cr-navitem.active {
-  background: linear-gradient(90deg, #c08a2620, transparent);
-  color: var(--cream-text);
+  /* background: #f8d4e2; */
+  color: #3b2f2f;
+  --tw-bg-opacity: 1;
+  background-color: rgb(248 228 210 / var(--tw-bg-opacity, 1));
+  --tw-border-opacity: 1;
+  border-color: rgb(234 217 200 / var(--tw-border-opacity, 1));
 }
 .cr-navitem.active::before {
   content: "";
@@ -538,12 +545,13 @@
   background: linear-gradient(180deg, var(--gold-bright), var(--gold));
 }
 .cr-navitem.active .cr-navicon {
-  color: var(--gold-bright);
+  --tw-text-opacity: 1;
+  color: rgb(245 167 3 / var(--tw-text-opacity, 1));
 }
 .cr-navicon {
   width: 16px;
   height: 16px;
-  color: #7a6647;
+  color: rgb(160 143 125 / var(--tw-text-opacity, 1));
   flex-shrink: 0;
 }
 .cr-navbadge {
@@ -598,29 +606,35 @@
   padding: 11px 12px;
   border-radius: 11px;
   /* background: var(--coffee-dark); */
-  background: linear-gradient(135deg, #3a2800, #5a3f00);
+  /* background: linear-gradient(135deg, #3a2800, #5a3f00); */
   border: 1px solid #ffffff0f;
   margin-bottom: 12px;
+
+  --tw-bg-opacity: 1;
+  background-color: rgb(248 228 210 / var(--tw-bg-opacity, 1));
 }
 .cr-cap-label {
   font-size: 11px;
-  color: #c7c4c0;
+  color: #3b2f2f;
 }
 .cr-cap-value {
   font-size: 13px;
   font-weight: 600;
   font-family: "IBM Plex Mono", monospace;
-  color: var(--cream-text);
+  /* color: var(--cream-text); */
+  color: #3b2f2f;
 }
 .cr-logout {
   text-align: center;
   font-size: 11.5px;
-  color: #c7c4c0;
+  color: #3b2f2f;
   cursor: pointer;
   padding: 6px 0;
 }
 .cr-logout:hover {
-  color: var(--cream-text);
+  /* color: var(--cream-text); */
+  /* color: #3b2f2f; */
+  color: rgb(248 113 113 / var(--tw-text-opacity, 1));
 }
 
 /* ---------- Main ---------- */
@@ -670,6 +684,7 @@
   color: var(--text-faint);
   font-size: 12.3px;
   transition: border-color 0.15s ease;
+  display: none;
 }
 .cr-search:hover {
   border-color: #d9c088;

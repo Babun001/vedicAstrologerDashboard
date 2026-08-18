@@ -1,10 +1,16 @@
 @import url("https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap");
+
 @import "tailwindcss";
 @import "./components/styles/dashboard.css";
+
+/* =========================
+   ROOT
+========================= */
 
 :root {
   --background: #ffffff;
   --foreground: #171717;
+  --tw-bg-opacity: 1;
 }
 
 @theme inline {
@@ -14,23 +20,44 @@
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+/* =========================
+   GLOBAL
+========================= */
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  min-height: 100%;
+  width: 100%;
 }
 
 body {
-  /* background: var(--background);
-  color: var(--foreground); */
+  margin: 0;
+  min-height: 100vh;
+  width: 100%;
   font-family: Arial, Helvetica, sans-serif;
-}
-body {
+
+  /* Background */
   background-image: url("/bg-final.jpg.jpeg");
-  background-size: cover;
-  background-position: center;
+  background-position: center center;
   background-repeat: no-repeat;
+  background-size: cover;
+  background-attachment: fixed;
+
+  color: var(--foreground);
+}
+
+/* Next.js root */
+#__next {
+  min-height: 100vh;
+}
+
+/* If using Next.js App Router */
+.cr-root {
+  min-height: 100vh;
+  width: 100%;
 }
 
 /* ---------- Create Report page ---------- */
@@ -578,5 +605,103 @@ body {
   .cr-action-bar {
     flex-direction: column;
     align-items: stretch;
+  }
+}
+
+.cr-toast-viewport {
+  position: fixed;
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: min(380px, calc(100vw - 32px));
+  pointer-events: none;
+}
+
+.cr-toast-viewport--top-right {
+  top: 20px;
+  right: 20px;
+}
+
+.cr-toast {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 48px;
+  padding: 12px 14px;
+  background: var(--background, #fff);
+  border: 1px solid var(--border, #e5e5e5);
+  border-radius: 8px;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
+  color: var(--foreground, #222);
+  cursor: pointer;
+  pointer-events: auto;
+  animation: cr-toast-in 0.2s ease-out;
+}
+
+.cr-toast-msg {
+  flex: 1;
+  font-size: 14px;
+  line-height: 20px;
+}
+
+.cr-toast-close {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: #888;
+  cursor: pointer;
+  border-radius: 4px;
+}
+
+.cr-toast-close:hover {
+  background: rgba(0, 0, 0, 0.06);
+  color: #333;
+}
+
+/* Success */
+
+.cr-toast--success {
+  border-left: 3px solid var(--success);
+}
+
+/* Warning */
+
+.cr-toast--warning {
+  border-left: 3px solid #b8860b;
+}
+
+/* Error */
+
+.cr-toast--error {
+  border-left: 3px solid var(--danger);
+}
+
+@keyframes cr-toast-in {
+  from {
+    opacity: 0;
+    transform: translateX(20px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@media (max-width: 600px) {
+  .cr-toast-viewport--top-right {
+    top: 12px;
+    right: 12px;
+    left: 12px;
+  }
+
+  .cr-toast-viewport {
+    width: auto;
   }
 }
