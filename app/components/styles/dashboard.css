@@ -1644,3 +1644,77 @@
     display: none;
   }
 }
+
+.cr-inbox-layout {
+  display: grid;
+  grid-template-columns: 320px 1fr;
+  grid-template-rows: minmax(
+    0,
+    1fr
+  ); /* row-ke full height fill korte badhyo kore */
+  gap: 0;
+  height: 100%;
+  min-height: 0;
+  border: 1px solid var(--tan-border-soft);
+  border-radius: 14px;
+  overflow: hidden;
+  box-shadow: var(--shadow-md);
+}
+.cr-convo-list {
+  border-right: 1px solid var(--tan-border-soft);
+  background: var(--cream-panel);
+  overflow-y: auto;
+  height: 100%;
+  min-height: 0;
+  /* max-height: 640px;  <-- eta remove korlam, ekhon parent height follow korbe */
+}
+
+.cr-thread {
+  background: var(--cream-panel-raised);
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+  overflow: hidden; /* thread nijei grow hoye composer push kore dite parbe na */
+}
+.cr-thread-head {
+  padding: 14px 20px;
+  border-bottom: 1px solid var(--tan-border-soft);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-shrink: 0; /* head chepe jabe na */
+}
+.cr-thread-body {
+  flex: 1;
+  min-height: 0; /* eta na dile flex-shrink kaj kore na, content-er full height nite chay */
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  overflow-y: auto;
+  /* max-height: 480px;  <-- fixed cap tule dilam, flex:1 + min-height:0 e scroll thik moto hobe */
+}
+.cr-composer {
+  border-top: 1px solid var(--tan-border-soft);
+  padding: 12px 16px;
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  flex-shrink: 0; /* composer kokhono chepe/push hobe na */
+}
+@media (max-width: 860px) {
+  .cr-inbox-layout {
+    grid-template-columns: 1fr;
+    height: auto;
+  }
+  .cr-convo-list {
+    max-height: 260px;
+    height: auto;
+  }
+  .cr-thread {
+    height: auto;
+    min-height: 380px;
+    overflow: visible;
+  }
+}
