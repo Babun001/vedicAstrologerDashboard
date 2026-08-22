@@ -5,11 +5,11 @@ import { GripVertical, CalendarClock, Reply, CheckCircle2 } from "lucide-react";
 
 import { QuestionModal } from "./QuestionModal";
 import axiosInstanceClient from "../services/client.services";
-import {
-  QUESTION_STATUS_FROM_BACKEND,
-  QUESTION_STATUS_TO_BACKEND,
-} from "../data/questionStatusMap";
+import { QUESTION_STATUS_TO_BACKEND } from "../data/questionStatusMap";
 import { KanbanSkeleton } from "../common/Skeleton";
+import { formatQuestionCard } from "../lib/workFormat";
+import { RefreshButton } from "../common/RefreshButton";
+import { Eyebrow } from "../common/Eyebrow";
 
 const columns = [
   { key: "new", label: "New" },
@@ -23,68 +23,46 @@ const columnColors = {
   delivered: "var(--success)",
 };
 
-const formatDue = (dueAt) => {
-  if (!dueAt) return "—";
-  const diffMs = new Date(dueAt).getTime() - Date.now();
-  if (diffMs < 0) return "Overdue";
-  const hrs = Math.floor(diffMs / (60 * 60 * 1000));
-  if (hrs < 1) return "< 1h left";
-  if (hrs < 24) return `${hrs}h left`;
-  return new Date(dueAt).toLocaleDateString();
-};
-
-export const QuestionsView = ({ onAnswerQuestion }) => {
+export const QuestionsView = ({ onAnswerQuestion, initialSelectedId, onInitialSelectedConsumed }) => {
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [questions, setQuestions] = useState([]);
   const [draggingId, setDraggingId] = useState(null);
   const [overCol, setOverCol] = useState(null);
   const [selectedId, setSelectedId] = useState(null);
 
-  const fetchQuestions = async () => {
+  const fetchQuestions = async ({ silent = false } = {}) => {
     try {
-      setLoading(true);
+      if (silent) {
+        setRefreshing(true);
+      } else {
+        setLoading(true);
+      }
       const res = await axiosInstanceClient.get("/astrologer/questions");
       const board = res.data.data.board;
       const all = [...board.pending, ...board.processing, ...board.answered];
 
-      const formatted = all.map((q) => ({
-        id: q._id,
-        questionId: q._id,
-        client: q.questionSetId?.fullName || "Unknown Client",
-        planName: q.questionSetId?.planName || "",
-        questionText: q.questionText,
-        concern: q.concern,
-        sequence: q.sequence,
-        due: formatDue(q.dueAt),
-        status: QUESTION_STATUS_FROM_BACKEND[q.status] || "new",
-        rawStatus: q.status,
-        birthDetails: q.questionSetId
-          ? {
-              gender: q.questionSetId.gender,
-              dob: q.questionSetId.dob,
-              tob: q.questionSetId.tob,
-              pobCity: q.questionSetId.pobCity,
-              pobCountry: q.questionSetId.pobCountry,
-              currentCountry: q.questionSetId.currentCountry,
-            }
-          : null,
-        answerText: q.answerText,
-        answeredAt: q.answeredAt,
-        payoutRate: q.payoutRate,
-        payoutCurrency: q.payoutCurrency,
-      }));
-
-      setQuestions(formatted);
+      setQuestions(all.map(formatQuestionCard));
     } catch (error) {
       console.error("Failed fetching questions:", error);
     } finally {
       setLoading(false);
+      setRefreshing(false);
     }
   };
 
   useEffect(() => {
     fetchQuestions();
   }, []);
+
+  // Arriving here from MyWorkView's "assigned to you" list.
+  useEffect(() => {
+    if (initialSelectedId) {
+      setSelectedId(initialSelectedId);
+      onInitialSelectedConsumed?.();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initialSelectedId]);
 
   useEffect(() => {
     const token = localStorage.getItem("astrologerToken");
@@ -94,7 +72,7 @@ export const QuestionsView = ({ onAnswerQuestion }) => {
     const es = new EventSource(streamUrl);
 
     es.addEventListener("new-question-assigned", () => {
-      fetchQuestions();
+      fetchQuestions({ silent: true });
     });
 
     return () => es.close();
@@ -150,8 +128,17 @@ export const QuestionsView = ({ onAnswerQuestion }) => {
   }
 
   return (
-    <div className="cr-kanban">
-      {columns.map((col) => {
+    <>
+      <div className="cr-page-head-row">
+        <Eyebrow>Questions</Eyebrow>
+        <RefreshButton
+          onClick={() => fetchQuestions({ silent: true })}
+          loading={refreshing}
+        />
+      </div>
+
+      <div className="cr-kanban">
+        {columns.map((col) => {
         const items = questions.filter((q) => q.status === col.key);
         const accent = columnColors[col.key];
 
@@ -264,6 +251,7 @@ export const QuestionsView = ({ onAnswerQuestion }) => {
           }}
         />
       )}
-    </div>
+      </div>
+    </>
   );
 };

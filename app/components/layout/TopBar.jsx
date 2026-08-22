@@ -11,6 +11,7 @@ const titles = {
   "create-report": ["Create Report", "Generate a new astrology report"],
   questions: ["Questions", "Client questions assigned to you — reply when ready"],
   "answer-question": ["Reply to Question", "Write and send your answer to the client"],
+  history: ["History", "Every report and question you've completed, with time and earnings"],
   profile: ["My Profile", "Manage your astrologer account"],
 };
 

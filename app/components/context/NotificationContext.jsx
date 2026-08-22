@@ -70,11 +70,23 @@ const playChime = () => {
 
 export function NotificationProvider({ children }) {
   const [notifications, setNotifications] = useState([]);
+  // "New since last viewed" counters for the Report Tasks and Questions
+  // sidebar badges — incremented on the matching SSE event, zeroed out
+  // by resetReportsBadge()/resetQuestionsBadge() when the astrologer
+  // actually opens that tab (see Sidebar.jsx). Deliberately NOT derived
+  // from server data (unlike the Inbox unread count) — there's no
+  // "seen" flag on reports/questions server-side, so this is purely a
+  // "what showed up since I last looked at this tab" client counter.
+  const [reportsBadge, setReportsBadge] = useState(0);
+  const [questionsBadge, setQuestionsBadge] = useState(0);
   const esRef = useRef(null);
 
   useEffect(() => {
     setNotifications(loadStored());
   }, []);
+
+  const resetReportsBadge = useCallback(() => setReportsBadge(0), []);
+  const resetQuestionsBadge = useCallback(() => setQuestionsBadge(0), []);
 
   const addNotification = useCallback((type, title, body, { sound = false } = {}) => {
     setNotifications((prev) => {
@@ -147,6 +159,8 @@ export function NotificationProvider({ children }) {
           { sound: true },
         );
       }
+
+      setReportsBadge((n) => n + 1);
     });
 
     // Was nested INSIDE the "new-task-assigned" callback above — which
@@ -163,6 +177,8 @@ export function NotificationProvider({ children }) {
         "A client has a new question waiting for your reply.",
         { sound: true },
       );
+
+      setQuestionsBadge((n) => n + 1);
     });
 
     es.addEventListener("report-delivered", (event) => {
@@ -194,7 +210,17 @@ export function NotificationProvider({ children }) {
 
   return (
     <NotificationContext.Provider
-      value={{ notifications, unreadCount, markAsRead, markAllAsRead, addNotification }}
+      value={{
+        notifications,
+        unreadCount,
+        markAsRead,
+        markAllAsRead,
+        addNotification,
+        reportsBadge,
+        questionsBadge,
+        resetReportsBadge,
+        resetQuestionsBadge,
+      }}
     >
       {children}
     </NotificationContext.Provider>

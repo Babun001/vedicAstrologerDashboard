@@ -6,11 +6,11 @@ const formatAmount = (n) =>
   new Intl.NumberFormat("en-IN", { maximumFractionDigits: 0 }).format(n || 0);
 
 export const IncomeBadge = () => {
-  const { amount, currency, loading } = useEarnings();
+  const { combinedAmount, currency, loading } = useEarnings();
 
   return (
     <div
-      title="Your total earnings from answered questions"
+      title="Your total earnings from reports and answered questions"
       style={{
         display: "flex",
         alignItems: "center",
@@ -29,7 +29,7 @@ export const IncomeBadge = () => {
       <Wallet size={14} />
       {loading
         ? "…"
-        : `${currency === "INR" ? "₹" : currency + " "}${formatAmount(amount)}`}
+        : `${currency === "INR" ? "₹" : currency + " "}${formatAmount(combinedAmount)}`}
     </div>
   );
 };

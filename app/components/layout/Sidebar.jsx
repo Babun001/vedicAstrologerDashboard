@@ -1,4 +1,5 @@
 "use client";
+import { useEffect } from "react";
 import {
   Sparkles,
   Inbox,
@@ -7,10 +8,12 @@ import {
   Award,
   FilePlus,
   HelpCircle,
+  History,
 } from "lucide-react";
 // import { StarField } from "../common/StarField";
 import { LotusWatermark } from "../common/LotusWatermark";
 import { useInbox } from "../context/InboxContext";
+import { useNotifications } from "../context/NotificationContext";
 
 const navBase = [
   { id: "work", label: "My Work", icon: Sparkles },
@@ -18,6 +21,7 @@ const navBase = [
   { id: "tasks", label: "Report Tasks", icon: ClipboardList },
   { id: "create-report", label: "Create Report", icon: FilePlus },
   { id: "questions", label: "Questions", icon: HelpCircle },
+  { id: "history", label: "History", icon: History },
 ];
 
 export const Sidebar = ({
@@ -28,18 +32,37 @@ export const Sidebar = ({
   onSignOut,
   astrologer,
 }) => {
-  // Was a hardcoded `badge: 4` in the nav config — never moved no
-  // matter how many messages actually came in or were read. Now pulls
-  // the live total from InboxContext (shared with InboxView), and
-  // zeroes out while the Inbox tab is the active view — same as
-  // WhatsApp's chat-list badge clearing once you're looking at it.
   const { totalUnread } = useInbox();
 
-  const nav = navBase.map((item) =>
-    item.id === "inbox"
-      ? { ...item, badge: view === "inbox" ? 0 : totalUnread }
-      : item,
-  );
+  const { reportsBadge, questionsBadge, resetReportsBadge, resetQuestionsBadge } =
+    useNotifications();
+
+  useEffect(() => {
+    if (view === "tasks" || view === "create-report") resetReportsBadge();
+  }, [view, resetReportsBadge]);
+
+  useEffect(() => {
+    if (view === "questions" || view === "answer-question") resetQuestionsBadge();
+  }, [view, resetQuestionsBadge]);
+
+  const nav = navBase.map((item) => {
+    if (item.id === "inbox") {
+      return { ...item, badge: view === "inbox" ? 0 : totalUnread };
+    }
+    if (item.id === "tasks") {
+      return {
+        ...item,
+        badge: view === "tasks" || view === "create-report" ? 0 : reportsBadge,
+      };
+    }
+    if (item.id === "questions") {
+      return {
+        ...item,
+        badge: view === "questions" || view === "answer-question" ? 0 : questionsBadge,
+      };
+    }
+    return item;
+  });
 
   return (
     <aside className={`cr-sidebar ${mobileNavOpen ? "open" : ""}`}>

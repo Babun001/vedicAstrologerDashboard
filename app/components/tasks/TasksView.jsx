@@ -11,8 +11,11 @@ import {
 import { TaskModal } from "./TaskModal";
 import { columns, columnColors } from "../data/demoData";
 import axiosInstanceClient from "../services/client.services";
-import { STATUS_TO_BACKEND, STATUS_FROM_BACKEND } from "../data/statusMap";
+import { STATUS_TO_BACKEND } from "../data/statusMap";
 import { KanbanSkeleton } from "../common/Skeleton";
+import { formatReportTask } from "../lib/workFormat";
+import { RefreshButton } from "../common/RefreshButton";
+import { Eyebrow } from "../common/Eyebrow";
 
 // Frontend -> Backend
 // const STATUS_TO_BACKEND = {
@@ -28,17 +31,22 @@ import { KanbanSkeleton } from "../common/Skeleton";
 //   delivered: "delivered",
 // };
 
-export const TasksView = ({ onGenerateReport }) => {
+export const TasksView = ({ onGenerateReport, initialSelectedId, onInitialSelectedConsumed }) => {
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [tasks, setTasks] = useState([]);
   const [draggingId, setDraggingId] = useState(null);
   const [overCol, setOverCol] = useState(null);
   const [selectedId, setSelectedId] = useState(null);
   const [generateReportId, setGenerateReportId] = useState(null);
 
-  const fetchReports = async () => {
+  const fetchReports = async ({ silent = false } = {}) => {
     try {
-      setLoading(true);
+      if (silent) {
+        setRefreshing(true);
+      } else {
+        setLoading(true);
+      }
       const res = await axiosInstanceClient.get("/astrologer/reports");
       const board = res.data.data.board;
       const reports = [
@@ -48,30 +56,30 @@ export const TasksView = ({ onGenerateReport }) => {
         ...board.delivered,
       ];
 
-      const formattedTasks = reports.map((report) => ({
-        id: report._id,
-        reportId: report._id,
-        client: report.leadId?.fullName || "Unknown Client",
-        service: report.concern || "Astrology Report",
-        due: report.dueAt || "-",
-        priority: report.priority || "medium",
-        who: report.assignedTo?.name || "—",
-        status: STATUS_FROM_BACKEND[report.status],
-        adminReview: report.adminReview,
-        content: report.content,
-      }));
-
-      setTasks(formattedTasks);
+      setTasks(reports.map(formatReportTask));
     } catch (error) {
       console.error("Failed fetching reports:", error);
     } finally {
       setLoading(false);
+      setRefreshing(false);
     }
   };
 
   useEffect(() => {
     fetchReports();
   }, []);
+
+  // Arriving here from MyWorkView's "assigned to you" list — open the
+  // specific report's modal as soon as we know which one, then tell the
+  // parent it's been consumed so navigating back to this tab later
+  // (e.g. via the sidebar) doesn't reopen a stale modal.
+  useEffect(() => {
+    if (initialSelectedId) {
+      setSelectedId(initialSelectedId);
+      onInitialSelectedConsumed?.();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initialSelectedId]);
 
   useEffect(() => {
     const token = localStorage.getItem("astrologerToken");
@@ -81,7 +89,7 @@ export const TasksView = ({ onGenerateReport }) => {
     const es = new EventSource(streamUrl);
 
     es.addEventListener("new-task-assigned", () => {
-      fetchReports();
+      fetchReports({ silent: true });
     });
 
     return () => es.close();
@@ -144,8 +152,17 @@ export const TasksView = ({ onGenerateReport }) => {
   }
 
   return (
-    <div className="cr-kanban">
-      {columns.map((col) => {
+    <>
+      <div className="cr-page-head-row">
+        <Eyebrow>Report tasks</Eyebrow>
+        <RefreshButton
+          onClick={() => fetchReports({ silent: true })}
+          loading={refreshing}
+        />
+      </div>
+
+      <div className="cr-kanban">
+        {columns.map((col) => {
         const items = tasks.filter((t) => t.status === col.key);
 
         const accent = columnColors[col.key];
@@ -274,6 +291,7 @@ export const TasksView = ({ onGenerateReport }) => {
           }}
         />
       )}
-    </div>
+      </div>
+    </>
   );
 };

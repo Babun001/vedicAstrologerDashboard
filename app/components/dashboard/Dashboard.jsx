@@ -17,6 +17,7 @@ import { NotificationProvider } from "../context/NotificationContext";
 import { InboxProvider } from "../context/InboxContext";
 import { QuestionsView } from "../questions/QuestionsView";
 import AnswerQuestion from "../questions/AnswerQuestion";
+import { HistoryView } from "../history/HistoryView";
 
 export default function Dashboard() {
   const [authed, setAuthed] = useState(false);
@@ -30,6 +31,12 @@ export default function Dashboard() {
   const [selectedReportId, setSelectedReportId] = useState(null);
   const [selectedQuestion, setSelectedQuestion] = useState(null);
   const [selectedReport, setSelectedReport] = useState(null);
+  // One-shot "open this specific card's modal" ids for the boards
+  // reached from MyWorkView. Cleared immediately once TasksView/
+  // QuestionsView consumes them so navigating back to that tab later
+  // (e.g. via the sidebar) doesn't reopen a stale modal.
+  const [initialTaskId, setInitialTaskId] = useState(null);
+  const [initialQuestionId, setInitialQuestionId] = useState(null);
   const [astrologer, setAstrologer] = useState(null);
   const [authView, setAuthView] = useState("login");
   const [profileLoading, setProfileLoading] = useState(false);
@@ -157,13 +164,25 @@ export default function Dashboard() {
 
                   <div className="cr-content">
                     {view === "work" && (
-                      <MyWorkView onViewTasks={() => setView("tasks")} />
+                      <MyWorkView
+                        onViewTasks={() => setView("tasks")}
+                        onSelectReport={(report) => {
+                          setInitialTaskId(report.reportId || report.id);
+                          setView("tasks");
+                        }}
+                        onSelectQuestion={(question) => {
+                          setSelectedQuestion(question);
+                          setView("answer-question");
+                        }}
+                      />
                     )}
 
                     {view === "inbox" && <InboxView />}
 
                     {view === "tasks" && (
                       <TasksView
+                        initialSelectedId={initialTaskId}
+                        onInitialSelectedConsumed={() => setInitialTaskId(null)}
                         onGenerateReport={(report) => {
                           setSelectedReportId(report);
                           setView("create-report");
@@ -177,6 +196,8 @@ export default function Dashboard() {
 
                     {view === "questions" && (
                       <QuestionsView
+                        initialSelectedId={initialQuestionId}
+                        onInitialSelectedConsumed={() => setInitialQuestionId(null)}
                         onAnswerQuestion={(question) => {
                           setSelectedQuestion(question);
                           setView("answer-question");
@@ -190,6 +211,8 @@ export default function Dashboard() {
                         onBack={() => setView("questions")}
                       />
                     )}
+
+                    {view === "history" && <HistoryView />}
 
                     {view === "profile" && (
                       <ProfileView
